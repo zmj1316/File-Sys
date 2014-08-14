@@ -1,0 +1,9 @@
+const u16 gb2312_to_unicode_table[]={
+0xB2E2,0x6D4B,//╡Б
+0xCAD4,0x8BD5//йт
+};
+
+u16 const unicode_to_gb2312_table[]={
+0x6D4B,0xB2E2,//╡Б
+0x8BD5,0xCAD4//йт
+};

@@ -1,0 +1,1 @@
+-c --device DARMP1 -g -O0 --apcs=interwork -I "d:\Keil\ARM\INC\NXP" -DDEBUG -o ".\out\uart0.o" --omf_browse ".\out\uart0.crf" --depend ".\out\uart0.d" "uart0\uart0.c"

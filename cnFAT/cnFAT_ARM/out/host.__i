@@ -1,0 +1,1 @@
+-c --device DARMP1 -g -O0 --apcs=interwork -I "d:\Keil\ARM\INC\NXP" -DDEBUG -o ".\out\host.o" --omf_browse ".\out\host.crf" --depend ".\out\host.d" "ZLG.USBHOST\HOST.c"

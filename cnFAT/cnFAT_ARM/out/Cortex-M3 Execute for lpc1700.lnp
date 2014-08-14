@@ -1,0 +1,4 @@
+--device DARMP1 ".\out\main.o" ".\out\lpc1700pincfg.o" ".\out\target.o" ".\out\vector_table.o" ".\out\zy_if.o" ".\out\rt_sys_s.o" ".\out\rt_sys_c.o" ".\out\os_mbox.o" ".\out\os_mem.o" ".\out\os_mutex.o" ".\out\os_q.o" ".\out\os_sem.o" ".\out\os_task.o" ".\out\os_time.o" ".\out\os_core.o" ".\out\os_flag.o" ".\out\os_cpu_c.o" ".\ZY_CODE\uCOS-II\hook\uCOS-II hook.lib" ".\out\host.o" ".\out\uart0.o" ".\out\fat.o" ".\out\time.o" --scatter ".\cfg_file\Startup\InChip.sct" 
+--entry __main --autoat --summary_stderr --info summarysizes --map --xref --callgraph --symbols 
+--info sizes --info totals --info unused --info veneers 
+ --list ".\Cortex-M3 Execute for lpc1700.map" -o ".\out\Cortex-M3 Execute for lpc1700.axf"

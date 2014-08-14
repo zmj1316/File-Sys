@@ -1,0 +1,1 @@
+-c --device DARMP1 -g -O0 --apcs=interwork -I "d:\Keil\ARM\INC\NXP" -DDEBUG -o ".\out\fat.o" --omf_browse ".\out\fat.crf" --depend ".\out\fat.d" "Fat\fat.c"

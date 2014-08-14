@@ -1,0 +1,23 @@
+BUG
+
+1.(2010-06-01)函数GetEntryFromDirectory(),解决HIDDEN目录枚举失败!
+2.(2010-06-05)优化FreeClusterChain()!
+3.(2010-06-06)Add_A_Directory_Entry_(), seek_space()是长文件名,len++;
+4.(2010-06-13)CORE_offset_add_32(), 解决末簇0xfffffff误判错误!
+5.Writeback_FCB_file_buffer(u8 FCBsn)-u16 TEMP=>>u32 TEMP
+6.解决多个长文件名对应短文件名冲突,造成PC蓝屏的问题!
+7.(2010-09-12)解决GetEntryWithLongFileName()中文长文件名尾判断失误的BUG,计算大于0X80的字符为UNICODE,而非ASCII.
+8.(2010-09-13)GetEntryFromDirectory()返回的ENTRY NAME包括Extension,Extension不放数据,废弃
+9.(2011-01-31)GetEntryFromDirectory()增加检查CORE.offset==512目录读取结束的判断
+10.(2011-02-21)解决中文相对路径在FullPathToSectorCluster()中判断失误的bug!
+11.(2011-05-26)解决FAT32长文件名不能生成不同短文件的错误!
+12.(2011-05-27)解决长文件名不带扩展名或扩展名大于3个字符的生成相同短文件名的BUG!
+13.(2011-05-27)解决文件名的扩展名大于3个字节,则建立长文件名!
+14.(2011-07-04)解决不能删除空目录的BUG,!改进了空目录的判断!
+15.(2011-07-06)解决time驱动,秒需要除2!
+16.(2011-07-08)增加一个函数get_file_attribute(),用于获取文件或目录的读写时间
+17.(2011-07-08)解决FullPathToSectorCluster目录和文件不能区分的BUG!
+18.(2011-08-03)解决Get_Previous_Cluster_From_Current_Cluster()不能获取前一簇的BUG;
+
+
+

@@ -1,0 +1,236 @@
+### uVision2 Project, (C) Keil Software
+### Do not modify !
+
+Target (DebugInFlash), 0x0004 // Tools: 'ARM-ADS'
+Target (Release), 0x0004 // Tools: 'ARM-ADS'
+
+Group (USER_CODE)
+Group (ZY_CODE)
+Group (cfg_file)
+Group (uCOS-II)
+Group (ZLG.USBHOST)
+Group (UART0)
+Group (FAT)
+
+File 1,1,<.\USER_CODE\main.c><main.c>
+File 2,1,<.\ZY_CODE\Startup\LPC1700PinCfg.c><LPC1700PinCfg.c>
+File 2,1,<.\ZY_CODE\Startup\target.c><target.c>
+File 2,1,<.\ZY_CODE\Startup\vector_table.c><vector_table.c>
+File 2,5,<.\ZY_CODE\firmware.h><firmware.h>
+File 2,5,<.\ZY_CODE\Startup\lpc1700.h><lpc1700.h>
+File 2,5,<.\ZY_CODE\Startup\target.h><target.h>
+File 2,1,<.\ZY_CODE\zy_if\zy_if.c><zy_if.c>
+File 2,5,<.\ZY_CODE\zy_if\zy_if.h><zy_if.h>
+File 3,5,<.\config.h><config.h>
+File 3,5,<.\cfg_file\target_cfg.h><target_cfg.h>
+File 3,5,<.\cfg_file\Startup\LPC1700PinCfg.h><LPC1700PinCfg.h>
+File 3,2,<.\cfg_file\Startup\rt_sys_s.s><rt_sys_s.s>
+File 3,1,<.\cfg_file\Startup\rt_sys_c.c><rt_sys_c.c>
+File 3,5,<.\cfg_file\zy_if\zy_if_cfg.h><zy_if_cfg.h>
+File 3,5,<.\cfg_file\uCOSII\OS_CFG.H><OS_CFG.H>
+File 3,5,<.\cfg_file\Startup\vector_cfg.h><vector_cfg.h>
+File 4,1,<.\ZY_CODE\uCOS-II\OS_MBOX.C><OS_MBOX.C>
+File 4,1,<.\ZY_CODE\uCOS-II\OS_MEM.C><OS_MEM.C>
+File 4,1,<.\ZY_CODE\uCOS-II\OS_MUTEX.C><OS_MUTEX.C>
+File 4,1,<.\ZY_CODE\uCOS-II\OS_Q.C><OS_Q.C>
+File 4,1,<.\ZY_CODE\uCOS-II\OS_SEM.C><OS_SEM.C>
+File 4,1,<.\ZY_CODE\uCOS-II\OS_TASK.C><OS_TASK.C>
+File 4,1,<.\ZY_CODE\uCOS-II\OS_TIME.C><OS_TIME.C>
+File 4,5,<.\ZY_CODE\uCOS-II\uCOS_II.H><uCOS_II.H>
+File 4,5,<.\ZY_CODE\uCOS-II\INCLUDES.H><INCLUDES.H>
+File 4,1,<.\ZY_CODE\uCOS-II\OS_CORE.C><OS_CORE.C>
+File 4,1,<.\ZY_CODE\uCOS-II\OS_FLAG.C><OS_FLAG.C>
+File 4,5,<.\ZY_CODE\uCOS-II\cpu\os_cpu.h><os_cpu.h>
+File 4,1,<.\ZY_CODE\uCOS-II\cpu\Os_cpu_c.c><Os_cpu_c.c>
+File 4,4,<.\ZY_CODE\uCOS-II\hook\uCOS-II hook.lib><uCOS-II hook.lib>
+File 5,1,<.\ZLG.USBHOST\HOST.c><HOST.c>
+File 6,1,<.\uart0\uart0.c><uart0.c>
+File 7,1,<.\Fat\fat.c><fat.c>
+File 7,5,<.\Fat\fat.h><fat.h>
+File 7,5,<.\Fat\fat_cfg.h><fat_cfg.h>
+File 7,5,<.\Fat\gb2312_to_unicode_table.h><gb2312_to_unicode_table.h>
+File 7,1,<.\Fat\time.c><time.c>
+File 7,5,<.\Fat\time.h><time.h>
+File 7,5,<.\Fat\types.h><types.h>
+
+
+Options 1,0,0  // Target 'DebugInFlash'
+ Device (LPC1766)
+ Vendor (NXP (founded by Philips))
+ Cpu (IRAM(0x10000000-0x10007FFF) IRAM2(0x2007C000-0x20083FFF) IROM(0-0x3FFFF) CLOCK(12000000) CPUTYPE("Cortex-M3"))
+ FlashUt ()
+ StupF ("STARTUP\NXP\startup_LPC17xx.s" ("NXP LPC17xx Startup Code"))
+ FlashDR (UL2CM3(-O463 -S0 -C0 -FO7 -FD10000000 -FC800 -FN1 -FF0LPC_IAP_256 -FS00 -FL040000))
+ DevID (4629)
+ Rgf (LPC17xx.H)
+ Mem ()
+ C ()
+ A ()
+ RL ()
+ OH ()
+ DBC_IFX ()
+ DBC_CMS ()
+ DBC_AMS ()
+ DBC_LMS ()
+ UseEnv=0
+ EnvBin ()
+ EnvInc ()
+ EnvLib ()
+ EnvReg (ÿNXP\)
+ OrgReg (ÿNXP\)
+ TgStat=16
+ OutDir (.\out\)
+ OutName (Cortex-M3 Execute for lpc1700)
+ GenApp=1
+ GenLib=0
+ GenHex=0
+ Debug=1
+ Browse=1
+ LstDir (.\)
+ HexSel=1
+ MG32K=0
+ TGMORE=0
+ RunUsr 0 0 <>
+ RunUsr 1 0 <>
+ BrunUsr 0 0 <>
+ BrunUsr 1 0 <>
+ CrunUsr 0 0 <>
+ CrunUsr 1 0 <>
+ SVCSID <>
+ GLFLAGS=1790
+ ADSFLGA { 242,31,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+ ACPUTYP ("Cortex-M3")
+ RVDEV ()
+ ADSTFLGA { 0,12,16,2,99,0,0,66,0,0,0,0,0,0,0,0,0,0,0,0 }
+ OCMADSOCM { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+ OCMADSIRAM { 0,0,0,0,16,0,128,0,0 }
+ OCMADSIROM { 1,0,0,0,0,0,0,4,0 }
+ OCMADSXRAM { 0,0,0,0,0,0,0,0,0 }
+ OCR_RVCT { 1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,4,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,16,0,128,0,0,0,0,192,7,32,0,128,0,0 }
+ RV_STAVEC ()
+ ADSCCFLG { 5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+ ADSCMISC ()
+ ADSCDEFN (DEBUG)
+ ADSCUDEF ()
+ ADSCINCD ()
+ ADSASFLG { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+ ADSAMISC ()
+ ADSADEFN ()
+ ADSAUDEF ()
+ ADSAINCD ()
+ PropFld { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+ IncBld=1
+ AlwaysBuild=0
+ GenAsm=0
+ AsmAsm=0
+ PublicsOnly=0
+ StopCode=3
+ CustArgs ()
+ LibMods ()
+ ADSLDFG { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+ ADSLDTA (0x00000000)
+ ADSLDDA (0x10000000)
+ ADSLDSC (.\cfg_file\Startup\InChip.sct)
+ ADSLDIB ()
+ ADSLDIC ()
+ ADSLDMC (--entry __main)
+ ADSLDIF ()
+ ADSLDDW ()
+  OPTDL (SARMCM3.DLL)(-MPU)(DARMP1.DLL)(-pLPC1766)(SARMCM3.DLL)(-MPU)(TARMP1.DLL)(-pLPC1766)
+  OPTDBG 49150,-1,()()()()()()()()()() (BIN\Emlink-A.dll)()()()
+ FLASH1 { 1,0,0,0,1,0,0,0,9,16,0,0,0,0,0,0,0,0,0,0 }
+ FLASH2 (BIN\Emlink-A.dll)
+ FLASH3 ("" ())
+ FLASH4 ()
+EndOpt
+
+Options 2,0,0  // Target 'Release'
+ Device (LPC1766)
+ Vendor (NXP (founded by Philips))
+ Cpu (IRAM(0x10000000-0x10007FFF) IRAM2(0x2007C000-0x20083FFF) IROM(0-0x3FFFF) CLOCK(12000000) CPUTYPE("Cortex-M3"))
+ FlashUt ()
+ StupF ("STARTUP\NXP\startup_LPC17xx.s" ("NXP LPC17xx Startup Code"))
+ FlashDR (UL2CM3(-O463 -S0 -C0 -FO7 -FD10000000 -FC800 -FN1 -FF0LPC_IAP_256 -FS00 -FL040000))
+ DevID (4629)
+ Rgf (LPC17xx.H)
+ Mem ()
+ C ()
+ A ()
+ RL ()
+ OH ()
+ DBC_IFX ()
+ DBC_CMS ()
+ DBC_AMS ()
+ DBC_LMS ()
+ UseEnv=0
+ EnvBin ()
+ EnvInc ()
+ EnvLib ()
+ EnvReg (ÿNXP\)
+ OrgReg (ÿNXP\)
+ TgStat=16
+ OutDir (.\out\)
+ OutName (Cortex-M3 Execute for lpc1700)
+ GenApp=1
+ GenLib=0
+ GenHex=0
+ Debug=1
+ Browse=1
+ LstDir (.\)
+ HexSel=1
+ MG32K=0
+ TGMORE=0
+ RunUsr 0 0 <>
+ RunUsr 1 0 <>
+ BrunUsr 0 0 <>
+ BrunUsr 1 0 <>
+ CrunUsr 0 0 <>
+ CrunUsr 1 0 <>
+ SVCSID <>
+ GLFLAGS=1790
+ ADSFLGA { 242,31,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+ ACPUTYP ("Cortex-M3")
+ RVDEV ()
+ ADSTFLGA { 0,12,16,2,99,0,0,66,0,0,0,0,0,0,0,0,0,0,0,0 }
+ OCMADSOCM { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+ OCMADSIRAM { 0,0,0,0,16,0,128,0,0 }
+ OCMADSIROM { 1,0,0,0,0,0,0,4,0 }
+ OCMADSXRAM { 0,0,0,0,0,0,0,0,0 }
+ OCR_RVCT { 1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,4,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,16,0,128,0,0,0,0,192,7,32,0,128,0,0 }
+ RV_STAVEC ()
+ ADSCCFLG { 5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+ ADSCMISC ()
+ ADSCDEFN (RELEASE)
+ ADSCUDEF ()
+ ADSCINCD ()
+ ADSASFLG { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+ ADSAMISC ()
+ ADSADEFN ()
+ ADSAUDEF ()
+ ADSAINCD ()
+ PropFld { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+ IncBld=1
+ AlwaysBuild=0
+ GenAsm=0
+ AsmAsm=0
+ PublicsOnly=0
+ StopCode=3
+ CustArgs ()
+ LibMods ()
+ ADSLDFG { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+ ADSLDTA (0x00000000)
+ ADSLDDA (0x10000000)
+ ADSLDSC (.\cfg_file\Startup\InChip.sct)
+ ADSLDIB ()
+ ADSLDIC ()
+ ADSLDMC (--entry __main)
+ ADSLDIF ()
+ ADSLDDW ()
+  OPTDL (SARMCM3.DLL)(-MPU)(DARMP1.DLL)(-pLPC1766)(SARMCM3.DLL)(-MPU)(TARMP1.DLL)(-pLPC1766)
+  OPTDBG 49150,9,()()()()()()()()()() (..\TKScope\UL2ARM_TKSCP_DRV_ARM_for_AGDI.dll)()()()
+ FLASH1 { 1,0,0,0,1,0,0,0,7,16,0,0,0,0,0,0,0,0,0,0 }
+ FLASH2 (..\TKScope\UL2ARM_TKSCP_DRV_ARM_for_AGDI.dll)
+ FLASH3 ("" ())
+ FLASH4 ()
+EndOpt
+

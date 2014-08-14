@@ -1,0 +1,25 @@
+*** Creating Trace Output File 'Cortex-M3 Execute for lpc1700.tra' Ok.
+### Preparing for ADS-LD.
+### Creating ADS-LD Command Line
+### List of Objects: adding '"main.o"'
+### List of Objects: adding '"lpc1700pincfg.o"'
+### List of Objects: adding '"target.o"'
+### List of Objects: adding '"vector_table.o"'
+### List of Objects: adding '"zy_if.o"'
+### List of Objects: adding '"rt_sys_s.o"'
+### List of Objects: adding '"rt_sys_c.o"'
+### ADS-LD Command completed:
+--device DARMP1 "main.o" "lpc1700pincfg.o" "target.o" "vector_table.o" "zy_if.o" "rt_sys_s.o" "rt_sys_c.o" --scatter ".\cfg_file\Startup\InChip.sct" 
+--entry __main --autoat --summary_stderr --info summarysizes --map --xref --callgraph --symbols 
+--info sizes --info totals --info unused --info veneers 
+ --list ".\Cortex-M3 Execute for lpc1700.map" -o "Cortex-M3 Execute for lpc1700.axf"### Preparing Environment (PrepEnvAds)
+### ADS-LD Output File: 'Cortex-M3 Execute for lpc1700.axf'
+### ADS-LD Command File: 'Cortex-M3 Execute for lpc1700.lnp'
+### Checking for dirty Components...
+### Creating CmdFile 'Cortex-M3 Execute for lpc1700.lnp', Handle=0x000001F8
+### Writing '.lnp' file
+### ADS-LD Command file 'Cortex-M3 Execute for lpc1700.lnp' is ready.
+### ADS-LD: About to start ADS-LD Thread.
+### ADS-LD: executed with 0 errors
+### Updating obj list
+### LDADS_file() completed.

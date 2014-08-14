@@ -1,0 +1,1 @@
+-c --device DARMP1 -g -O0 --apcs=interwork -I "d:\Keil\ARM\INC\NXP" -DDEBUG -o ".\out\time.o" --omf_browse ".\out\time.crf" --depend ".\out\time.d" "Fat\time.c"
