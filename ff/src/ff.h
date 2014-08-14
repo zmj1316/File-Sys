@@ -51,7 +51,7 @@ extern PARTITION VolToPart[];	/* Volume - Partition resolution table */
 
 /* Type of path name strings on FatFs API */
 
-#if _LFN_UNICODE			/* Unicode string */
+#if _LFN_UNICODE			/* Unicode string 默认采用*/
 #if !_USE_LFN
 #error _LFN_UNICODE must be 0 at non-LFN cfg.
 #endif
@@ -72,29 +72,29 @@ typedef char TCHAR;
 
 
 
-/* File system object structure (FATFS) */
+/* File system object structure (FATFS) 文件系统结构*/
 
 typedef struct {
 	BYTE	fs_type;		/* FAT sub-type (0:Not mounted) */
 	BYTE	drv;			/* Physical drive number */
-	BYTE	csize;			/* Sectors per cluster (1,2,4...128) */
-	BYTE	n_fats;			/* Number of FAT copies (1 or 2) */
+	BYTE	csize;			/* Sectors per cluster (1,2,4...128) 单簇扇区数*/
+	BYTE	n_fats;			/* Number of FAT copies (1 or 2) 表个数*/
 	BYTE	wflag;			/* win[] flag (b0:dirty) */
 	BYTE	fsi_flag;		/* FSINFO flags (b7:disabled, b0:dirty) */
 	WORD	id;				/* File system mount ID */
-	WORD	n_rootdir;		/* Number of root directory entries (FAT12/16) */
+	WORD	n_rootdir;		/* Number of root directory entries (FAT12/16)根目录最大文件数 */
 #if _MAX_SS != _MIN_SS
-	WORD	ssize;			/* Bytes per sector (512, 1024, 2048 or 4096) */
+	WORD	ssize;			/* Bytes per sector (512, 1024, 2048 or 4096) 扇区字节数*/
 #endif
 #if _FS_REENTRANT
 	_SYNC_t	sobj;			/* Identifier of sync object */
 #endif
 #if !_FS_READONLY
-	DWORD	last_clust;		/* Last allocated cluster */
-	DWORD	free_clust;		/* Number of free clusters */
+	DWORD	last_clust;		/* Last allocated cluster最后被分配的簇 */
+	DWORD	free_clust;		/* Number of free clusters空闲簇 */
 #endif
 #if _FS_RPATH
-	DWORD	cdir;			/* Current directory start cluster (0:root) */
+	DWORD	cdir;			/* Current directory start cluster (0:root) 当前目录簇*/
 #endif
 	DWORD	n_fatent;		/* Number of FAT entries, = number of clusters + 2 */
 	DWORD	fsize;			/* Sectors per FAT */
@@ -167,7 +167,7 @@ typedef struct {
 	WORD	ftime;			/* Last modified time */
 	BYTE	fattrib;		/* Attribute */
 	TCHAR	fname[13];		/* Short file name (8.3 format) */
-#if _USE_LFN
+#if _USE_LFN                  /*默认0*/
 	TCHAR*	lfname;			/* Pointer to the LFN buffer */
 	UINT 	lfsize;			/* Size of LFN buffer in TCHAR */
 #endif
@@ -205,21 +205,21 @@ typedef enum {
 /*--------------------------------------------------------------*/
 /* FatFs module application interface                           */
 
-FRESULT f_open (FIL* fp, const TCHAR* path, BYTE mode);				/* Open or create a file */
-FRESULT f_close (FIL* fp);											/* Close an open file object */
-FRESULT f_read (FIL* fp, void* buff, UINT btr, UINT* br);			/* Read data from a file */
-FRESULT f_write (FIL* fp, const void* buff, UINT btw, UINT* bw);	/* Write data to a file */
+FRESULT f_open (FIL* fp, const TCHAR* path, BYTE mode);				/* 打开创建文件 */
+FRESULT f_close (FIL* fp);											/* 关闭文件 */
+FRESULT f_read (FIL* fp, void* buff, UINT btr, UINT* br);			/* 从文件读取*/
+FRESULT f_write (FIL* fp, const void* buff, UINT btw, UINT* bw);	/* 向文件写入 */
 FRESULT f_forward (FIL* fp, UINT(*func)(const BYTE*,UINT), UINT btf, UINT* bf);	/* Forward data to the stream */
-FRESULT f_lseek (FIL* fp, DWORD ofs);								/* Move file pointer of a file object */
+FRESULT f_lseek (FIL* fp, DWORD ofs);								/* 移动文件指针Move file pointer of a file object */
 FRESULT f_truncate (FIL* fp);										/* Truncate file */
 FRESULT f_sync (FIL* fp);											/* Flush cached data of a writing file */
-FRESULT f_opendir (DIR* dp, const TCHAR* path);						/* Open a directory */
-FRESULT f_closedir (DIR* dp);										/* Close an open directory */
-FRESULT f_readdir (DIR* dp, FILINFO* fno);							/* Read a directory item */
-FRESULT f_mkdir (const TCHAR* path);								/* Create a sub directory */
-FRESULT f_unlink (const TCHAR* path);								/* Delete an existing file or directory */
-FRESULT f_rename (const TCHAR* path_old, const TCHAR* path_new);	/* Rename/Move a file or directory */
-FRESULT f_stat (const TCHAR* path, FILINFO* fno);					/* Get file status */
+FRESULT f_opendir (DIR* dp, const TCHAR* path);						/* 打开目录Open a directory */
+FRESULT f_closedir (DIR* dp);										/* 关闭目录Close an open directory */
+FRESULT f_readdir (DIR* dp, FILINFO* fno);							/* 读取目录Read a directory item */
+FRESULT f_mkdir (const TCHAR* path);								/* 建立子目录Create a sub directory */
+FRESULT f_unlink (const TCHAR* path);								/* 删除Delete an existing file or directory */
+FRESULT f_rename (const TCHAR* path_old, const TCHAR* path_new);	/* 重命名或移动Rename/Move a file or directory */
+FRESULT f_stat (const TCHAR* path, FILINFO* fno);					/* 文件信息Get file status */
 FRESULT f_chmod (const TCHAR* path, BYTE value, BYTE mask);			/* Change attribute of the file/dir */
 FRESULT f_utime (const TCHAR* path, const FILINFO* fno);			/* Change times-tamp of the file/dir */
 FRESULT f_chdir (const TCHAR* path);								/* Change current directory */
@@ -236,10 +236,10 @@ int f_puts (const TCHAR* str, FIL* cp);								/* Put a string to the file */
 int f_printf (FIL* fp, const TCHAR* str, ...);						/* Put a formatted string to the file */
 TCHAR* f_gets (TCHAR* buff, int len, FIL* fp);						/* Get a string from the file */
 
-#define f_eof(fp) (((fp)->fptr == (fp)->fsize) ? 1 : 0)
+#define f_eof(fp) (((fp)->fptr == (fp)->fsize) ? 1 : 0)     //文件结尾
 #define f_error(fp) ((fp)->err)
 #define f_tell(fp) ((fp)->fptr)
-#define f_size(fp) ((fp)->fsize)
+#define f_size(fp) ((fp)->fsize)			//文件大小
 
 #ifndef EOF
 #define EOF (-1)
@@ -303,7 +303,7 @@ int ff_del_syncobj (_SYNC_t sobj);				/* Delete a sync object */
 #define FS_FAT32	3
 
 
-/* File attribute bits for directory entry */
+/* File attribute bits for directory entry 目录属性*/
 
 #define	AM_RDO	0x01	/* Read only */
 #define	AM_HID	0x02	/* Hidden */
