@@ -840,7 +840,7 @@ FRESULT sync_fs (	/* FR_OK: successful, FR_DISK_ERR: failed */
 
 
 /*-----------------------------------------------------------------------*/
-/* Get sector# from cluster#                                             */
+/* Get sector# from cluster# 返回扇区位置                                */
 /*-----------------------------------------------------------------------*/
 
 
@@ -967,7 +967,7 @@ FRESULT put_fat (
 
 
 /*-----------------------------------------------------------------------*/
-/* FAT handling - Remove a cluster chain                                 */
+/* FAT handling - Remove a cluster chain         移除簇链		         */
 /*-----------------------------------------------------------------------*/
 #if !_FS_READONLY
 static
@@ -992,9 +992,9 @@ FRESULT remove_chain (
 			if (nxt == 0) break;				/* Empty cluster? */
 			if (nxt == 1) { res = FR_INT_ERR; break; }	/* Internal error? */
 			if (nxt == 0xFFFFFFFF) { res = FR_DISK_ERR; break; }	/* Disk error? */
-			res = put_fat(fs, clst, 0);			/* Mark the cluster "empty" */
+			res = put_fat(fs, clst, 0);			/* Mark the cluster "empty"标示已经清空 */
 			if (res != FR_OK) break;
-			if (fs->free_clust != 0xFFFFFFFF) {	/* Update FSINFO */
+			if (fs->free_clust != 0xFFFFFFFF) {	/* Update FSINFO 更新信息*/
 				fs->free_clust++;
 				fs->fsi_flag |= 1;
 			}
@@ -1034,7 +1034,7 @@ DWORD create_chain (	/* 0:No free cluster, 1:Internal error, 0xFFFFFFFF:Disk err
 
 
 	if (clst == 0) {		/* Create a new chain */
-		scl = fs->last_clust;			/* Get suggested start point */
+		scl = fs->last_clust;			/* Get suggested start point从最前的空闲簇开始 */
 		if (!scl || scl >= fs->n_fatent) scl = 1;
 	}
 	else {					/* Stretch the current chain */
@@ -1045,7 +1045,7 @@ DWORD create_chain (	/* 0:No free cluster, 1:Internal error, 0xFFFFFFFF:Disk err
 		scl = clst;
 	}
 
-	ncl = scl;				/* Start cluster */
+	ncl = scl;				/* 开始簇链 */
 	for (;;) {
 		ncl++;							/* Next cluster */
 		if (ncl >= fs->n_fatent) {		/* Check wrap around */
@@ -1053,7 +1053,7 @@ DWORD create_chain (	/* 0:No free cluster, 1:Internal error, 0xFFFFFFFF:Disk err
 			if (ncl > scl) return 0;	/* No free cluster */
 		}
 		cs = get_fat(fs, ncl);			/* Get the cluster status */
-		if (cs == 0) break;				/* Found a free cluster */
+		if (cs == 0) break;				/* 找到下一个空闲簇 */
 		if (cs == 0xFFFFFFFF || cs == 1)/* An error occurred */
 			return cs;
 		if (ncl == scl) return 0;		/* No free cluster */
@@ -1110,7 +1110,7 @@ DWORD clmt_clust (	/* <2:Error, >=2:Cluster number */
 
 
 /*-----------------------------------------------------------------------*/
-/* Directory handling - Set directory index                              */
+/* Directory handling - Set directory index       设定目录                       */
 /*-----------------------------------------------------------------------*/
 
 static
@@ -1263,7 +1263,7 @@ FRESULT dir_alloc (
 
 
 /*-----------------------------------------------------------------------*/
-/* Directory handling - Load/Store start cluster number                  */
+/* Directory handling - Load/Store start cluster number  存储读取起始簇  */
 /*-----------------------------------------------------------------------*/
 
 static
