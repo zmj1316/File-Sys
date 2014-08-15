@@ -994,7 +994,7 @@ FRESULT remove_chain (
 			if (nxt == 0xFFFFFFFF) { res = FR_DISK_ERR; break; }	/* Disk error? */
 			res = put_fat(fs, clst, 0);			/* Mark the cluster "empty"标示已经清空 */
 			if (res != FR_OK) break;
-			if (fs->free_clust != 0xFFFFFFFF) {	/* Update FSINFO 更新信息*/
+			if (fs->free_clust != 0xFFFFFFFF) {	/* Update FSINFO 更新文件系统信息*/
 				fs->free_clust++;
 				fs->fsi_flag |= 1;
 			}

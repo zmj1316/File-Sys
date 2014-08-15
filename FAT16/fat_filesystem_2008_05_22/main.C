@@ -19,7 +19,7 @@ Abstract:
 $Id: main.C,v 1.1.1.1 2007/01/01 10:35:32 tony Exp $
 -FHDR-------------------------------------------------------------------*/
 
-#include "stdio.h"
+#include <stdio.h>
 
 #include "include\types.h"
 

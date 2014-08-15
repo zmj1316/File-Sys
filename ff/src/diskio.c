@@ -8,16 +8,14 @@
 /*-----------------------------------------------------------------------*/
 
 #include "diskio.h"		/* FatFs lower layer API */
-#include "usbdisk.h"	/* Example: USB drive control */
-#include "atadrive.h"	/* Example: ATA drive control */
-#include "sdcard.h"		/* Example: MMC/SDC contorl */
-
+#include <stdio.h>
+#include <time.h>
 /* Definitions of physical drive number for each media */
 #define ATA		0
 #define MMC		1
 #define USB		2
 
-
+FILE * fp;
 /*-----------------------------------------------------------------------*/
 /* Inidialize a Drive                                                    */
 /*-----------------------------------------------------------------------*/
@@ -27,31 +25,19 @@ DSTATUS disk_initialize (
 )
 {
 	DSTATUS stat;
-	int result;
-
-	switch (pdrv) {
-	case ATA :
-		result = ATA_disk_initialize();
-
-		// translate the reslut code here
-
-		return stat;
-
-	case MMC :
-		result = MMC_disk_initialize();
-
-		// translate the reslut code here
-
-		return stat;
-
-	case USB :
-		result = USB_disk_initialize();
-
-		// translate the reslut code here
-
-		return stat;
-	}
-	return STA_NOINIT;
+	int i;
+	char a[256],buf[512];
+	sprintf(a,"%d.img",pdrv);
+	fp=fopen(a,"rb+");
+    for(i = 0;i<27036;i++)
+	  {
+	   if((i%1000) == 0)
+		   printf("#");
+	   fwrite(buf, 1,512,fp);
+	  
+	  }
+	 fclose(fp);
+	return 0;
 }
 
 
@@ -67,29 +53,7 @@ DSTATUS disk_status (
 	DSTATUS stat;
 	int result;
 
-	switch (pdrv) {
-	case ATA :
-		result = ATA_disk_status();
-
-		// translate the reslut code here
-
-		return stat;
-
-	case MMC :
-		result = MMC_disk_status();
-
-		// translate the reslut code here
-
-		return stat;
-
-	case USB :
-		result = USB_disk_status();
-
-		// translate the reslut code here
-
-		return stat;
-	}
-	return STA_NOINIT;
+	return 0;
 }
 
 
@@ -106,37 +70,13 @@ DRESULT disk_read (
 )
 {
 	DRESULT res;
-	int result;
-
-	switch (pdrv) {
-	case ATA :
-		// translate the arguments here
-
-		result = ATA_disk_read(buff, sector, count);
-
-		// translate the reslut code here
-
-		return res;
-
-	case MMC :
-		// translate the arguments here
-
-		result = MMC_disk_read(buff, sector, count);
-
-		// translate the reslut code here
-
-		return res;
-
-	case USB :
-		// translate the arguments here
-
-		result = USB_disk_read(buff, sector, count);
-
-		// translate the reslut code here
-
-		return res;
-	}
-	return RES_PARERR;
+	char a[255];
+	sprintf(a,"%d.img",pdrv);
+	fp=fopen(a,"rb+");
+	fseek(fp,sector*512,0);
+	fread(buff, 1,512,fp);
+	fclose(fp);
+	return 0;
 }
 
 
@@ -154,37 +94,14 @@ DRESULT disk_write (
 )
 {
 	DRESULT res;
-	int result;
-
-	switch (pdrv) {
-	case ATA :
-		// translate the arguments here
-
-		result = ATA_disk_write(buff, sector, count);
-
-		// translate the reslut code here
-
-		return res;
-
-	case MMC :
-		// translate the arguments here
-
-		result = MMC_disk_write(buff, sector, count);
-
-		// translate the reslut code here
-
-		return res;
-
-	case USB :
-		// translate the arguments here
-
-		result = USB_disk_write(buff, sector, count);
-
-		// translate the reslut code here
-
-		return res;
-	}
-	return RES_PARERR;
+	char a[255];
+	sprintf(a,"%d.img",pdrv);
+	fp=fopen(a,"rb+");
+	fseek(fp,sector*512,0);
+	fwrite(buff, 1,512,fp);
+	fflush(fp);
+	fclose(fp);
+	return 0;
 }
 #endif
 
@@ -200,37 +117,30 @@ DRESULT disk_ioctl (
 	void *buff		/* Buffer to send/receive control data */
 )
 {
-	DRESULT res;
-	int result;
-
-	switch (pdrv) {
-	case ATA :
-		// pre-process here
-
-		result = ATA_disk_ioctl(cmd, buff);
-
-		// post-process here
-
-		return res;
-
-	case MMC :
-		// pre-process here
-
-		result = MMC_disk_ioctl(cmd, buff);
-
-		// post-process here
-
-		return res;
-
-	case USB :
-		// pre-process here
-
-		result = USB_disk_ioctl(cmd, buff);
-
-		// post-process here
-
-		return res;
-	}
-	return RES_PARERR;
+	
+	return 0;
 }
 #endif
+DWORD get_fattime(){
+	int year,month,date,hour,minute,second;
+  struct tm *local;
+  time_t t;
+  t=time(NULL);
+  local=localtime(&t);
+
+  year = local->tm_year + 1900;
+  month = local->tm_mon+1;
+  date = local->tm_mday;
+  hour = local->tm_hour;
+  minute = local->tm_min;
+  second = local->tm_sec;
+
+	return 	  ((DWORD)(year - 1980) << 25)
+			| ((DWORD)month << 21)
+			| ((DWORD)date << 16)
+			| (WORD)(hour << 11)
+			| (WORD)(minute << 5)
+			| (WORD)(second >> 1);
+}
+	
+                    
