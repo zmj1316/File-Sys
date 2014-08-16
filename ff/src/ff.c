@@ -4034,7 +4034,6 @@ FRESULT f_mkfs (
 	au /= SS(fs);		/* Number of sectors per cluster */
 	if (au == 0) au = 1;
 	if (au > 128) au = 128;
-
 	/* Pre-compute number of clusters and FAT sub-type */
 	n_clst = n_vol / au;
 	fmt = FS_FAT12;
@@ -4207,8 +4206,7 @@ FRESULT f_mkfs (
 		disk_write(pdrv, tbl, b_vol + 1, 1);	/* Write original (VBR+1) */
 		disk_write(pdrv, tbl, b_vol + 7, 1);	/* Write backup (VBR+7) */
 	}
-
-	return (disk_ioctl(pdrv, CTRL_SYNC, 0) == RES_OK) ? FR_OK : FR_DISK_ERR;
+	return 0;
 }
 
 

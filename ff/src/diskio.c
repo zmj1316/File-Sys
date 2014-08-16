@@ -42,7 +42,9 @@ DSTATUS disk_initialize (
 	   fwrite(buf, 1,512,fp);
 	  
 	  }
+	printf("\nDisk created!\n");
 	 fclose(fp);
+	getch();
 	return 0;
 }
 
@@ -123,7 +125,11 @@ DRESULT disk_ioctl (
 	void *buff		/* Buffer to send/receive control data */
 )
 {
-	
+	switch(cmd){
+		case CTRL_SYNC: *((DWORD*)buff)=0; break;
+		case GET_SECTOR_COUNT: *((DWORD*)buff) = 20000; break;
+		case GET_BLOCK_SIZE : *((DWORD*)buff) = 512;
+	}
 	return 0;
 }
 #endif
@@ -150,39 +156,3 @@ DWORD get_fattime(){
 }
 	
                    
-DRESULT disk_ioctl (
-	BYTE pdrv,		/* Physical drive nmuber (0) */
-	BYTE ctrl,		/* Control code */
-	void *buff		/* Buffer to send/receive data block */
-)
-{
-	DRESULT res = RES_PARERR;
-
-
-	if (pdrv >= Drives || (Stat[pdrv].status & STA_NOINIT))
-		return RES_NOTRDY;
-
-	switch (ctrl) {
-	case CTRL_SYNC:
-		res = RES_OK;
-		break;
-
-	case GET_SECTOR_COUNT:
-		*(DWORD*)buff = 20000;
-		res = RES_OK;
-		break;
-
-	case GET_SECTOR_SIZE:
-		*(WORD*)buff = 512;
-		res = RES_OK;
-		break;
-
-	case GET_BLOCK_SIZE:
-		*(DWORD*)buff = 128;
-		res = RES_OK;
-		break;
-
-	}
-
-	return res;
-}

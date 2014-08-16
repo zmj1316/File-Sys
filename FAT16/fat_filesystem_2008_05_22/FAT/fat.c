@@ -19,10 +19,10 @@ Abstract:
 $Id: main.C,v 1.1.1.1 2007/01/01 10:35:32 tony Exp $
 -FHDR-------------------------------------------------------------------*/
  
-#include<stdio.h>
-#include<include\types.h>
-#include<Flash_Management\Flash_Management.h>   
-#include<include\FAT_cfg.h>
+#include <stdio.h>
+#include <include\types.h>
+#include <Flash_Management\Flash_Management.h>   
+#include <include\FAT_cfg.h>
 //data struct CORE definition
 static struct core_ CORE;
 //BPB data struct definition
