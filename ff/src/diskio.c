@@ -16,10 +16,16 @@
 #define USB		2
 
 FILE * fp;
+typedef struct {
+	DSTATUS	status;
+	WORD sz_sector;
+	DWORD n_sectors;
+	HANDLE h_drive;
+} STAT;
 /*-----------------------------------------------------------------------*/
 /* Inidialize a Drive                                                    */
 /*-----------------------------------------------------------------------*/
-
+STAT stat[3];
 DSTATUS disk_initialize (
 	BYTE pdrv				/* Physical drive nmuber (0..) */
 )
