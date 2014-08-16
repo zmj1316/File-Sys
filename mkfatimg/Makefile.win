@@ -1,0 +1,35 @@
+# Project: 工程1
+# Makefile created by Dev-C++ 4.9.9.1
+
+CPP  = g++.exe
+CC   = gcc.exe
+WINDRES = windres.exe
+RES  = 
+OBJ  = diskio.o ff.o main.o $(RES)
+LINKOBJ  = diskio.o ff.o main.o $(RES)
+LIBS =  -L"d:/Dev-Cpp/lib"  
+INCS =  -I"d:/Dev-Cpp/include" 
+CXXINCS =  -I"d:/Dev-Cpp/include/c++/3.3.1"  -I"d:/Dev-Cpp/include/c++/3.3.1/mingw32"  -I"d:/Dev-Cpp/include/c++/3.3.1/backward"  -I"d:/Dev-Cpp/lib/gcc-lib/mingw32/3.3.1/include"  -I"d:/Dev-Cpp/include" 
+BIN  = 工程1.exe
+CXXFLAGS = $(CXXINCS)   -ansi
+CFLAGS = $(INCS)   -ansi
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before 工程1.exe all-after
+
+
+clean: clean-custom
+	rm -f $(OBJ) $(BIN)
+
+$(BIN): $(OBJ)
+	$(CC) $(LINKOBJ) -o "工程1.exe" $(LIBS)
+
+diskio.o: diskio.c d:/Dev-Cpp/include/windows.h diskio.h integer.h   d:/Dev-Cpp/include/tchar.h ff.h ffconf.h
+	$(CC) -c diskio.c -o diskio.o $(CFLAGS)
+
+ff.o: ff.c ff.h integer.h d:/Dev-Cpp/include/windows.h   d:/Dev-Cpp/include/tchar.h ffconf.h diskio.h
+	$(CC) -c ff.c -o ff.o $(CFLAGS)
+
+main.o: main.c d:/Dev-Cpp/include/windows.h d:/Dev-Cpp/include/stdio.h   ff.h integer.h d:/Dev-Cpp/include/tchar.h ffconf.h diskio.h
+	$(CC) -c main.c -o main.o $(CFLAGS)

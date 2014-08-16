@@ -29,7 +29,7 @@ DSTATUS disk_initialize (
 	char a[256],buf[512];
 	sprintf(a,"%d.img",pdrv);
 	fp=fopen(a,"rb+");
-    for(i = 0;i<27036;i++)
+    for(i = 0;i<20000;i++)
 	  {
 	   if((i%1000) == 0)
 		   printf("#");
@@ -143,4 +143,40 @@ DWORD get_fattime(){
 			| (WORD)(second >> 1);
 }
 	
-                    
+                   
+DRESULT disk_ioctl (
+	BYTE pdrv,		/* Physical drive nmuber (0) */
+	BYTE ctrl,		/* Control code */
+	void *buff		/* Buffer to send/receive data block */
+)
+{
+	DRESULT res = RES_PARERR;
+
+
+	if (pdrv >= Drives || (Stat[pdrv].status & STA_NOINIT))
+		return RES_NOTRDY;
+
+	switch (ctrl) {
+	case CTRL_SYNC:
+		res = RES_OK;
+		break;
+
+	case GET_SECTOR_COUNT:
+		*(DWORD*)buff = 20000;
+		res = RES_OK;
+		break;
+
+	case GET_SECTOR_SIZE:
+		*(WORD*)buff = 512;
+		res = RES_OK;
+		break;
+
+	case GET_BLOCK_SIZE:
+		*(DWORD*)buff = 128;
+		res = RES_OK;
+		break;
+
+	}
+
+	return res;
+}
