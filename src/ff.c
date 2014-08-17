@@ -471,7 +471,7 @@ typedef struct {
 #define	LDIR_Type			12		/* LFN type (1) */
 #define	LDIR_Chksum			13		/* Sum of corresponding SFN entry */
 #define	LDIR_FstClusLO		26		/* Filled by zero (0) */
-#define	SZ_DIR				32		/* Size of a directory entry */
+#define	SZ_DIR				32		/* 目录记录大小 */
 #define	LLE					0x40	/* Last long entry flag in LDIR_Ord */
 #define	DDE					0xE5	/* Deleted directory entry mark in DIR_Name[0] */
 #define	NDDE				0x05	/* Replacement of the character collides with DDE */
@@ -750,6 +750,7 @@ void clear_lock (	/* Clear lock entries of the volume */
 /*-----------------------------------------------------------------------*/
 /* Move/Flush disk access window in the file system object               */
 /*-----------------------------------------------------------------------*/
+/*确认缓存写入完成*/
 #if !_FS_READONLY
 static
 FRESULT sync_window (
@@ -776,7 +777,7 @@ FRESULT sync_window (
 }
 #endif
 
-
+/*缓存扇区 至内存*/
 static
 FRESULT move_window (
 	FATFS* fs,		/* File system object */
@@ -843,7 +844,7 @@ FRESULT sync_fs (	/* FR_OK: successful, FR_DISK_ERR: failed */
 /* Get sector# from cluster#                                             */
 /*-----------------------------------------------------------------------*/
 
-
+/*从簇得扇区*/
 DWORD clust2sect (	/* !=0: Sector number, 0: Failed - invalid cluster# */
 	FATFS* fs,		/* File system object */
 	DWORD clst		/* Cluster# to be converted */
@@ -861,7 +862,7 @@ DWORD clust2sect (	/* !=0: Sector number, 0: Failed - invalid cluster# */
 /* FAT access - Read value of a FAT entry                                */
 /*-----------------------------------------------------------------------*/
 
-
+/*读取fat中簇,返回状态*/
 DWORD get_fat (	/* 0xFFFFFFFF:Disk error, 1:Internal error, Else:Cluster status */
 	FATFS* fs,	/* File system object */
 	DWORD clst	/* Cluster# to get the link information */
@@ -906,6 +907,7 @@ DWORD get_fat (	/* 0xFFFFFFFF:Disk error, 1:Internal error, Else:Cluster status 
 /*-----------------------------------------------------------------------*/
 /* FAT access - Change value of a FAT entry                              */
 /*-----------------------------------------------------------------------*/
+/*簇状态写入fat*/
 #if !_FS_READONLY
 
 FRESULT put_fat (
@@ -956,7 +958,7 @@ FRESULT put_fat (
 		default :
 			res = FR_INT_ERR;
 		}
-		fs->wflag = 1;
+		fs->wflag = 1;/*标记缓存未写入状态*/
 	}
 
 	return res;
@@ -969,6 +971,7 @@ FRESULT put_fat (
 /*-----------------------------------------------------------------------*/
 /* FAT handling - Remove a cluster chain                                 */
 /*-----------------------------------------------------------------------*/
+/*清除链表*/
 #if !_FS_READONLY
 static
 FRESULT remove_chain (
@@ -987,14 +990,14 @@ FRESULT remove_chain (
 
 	} else {
 		res = FR_OK;
-		while (clst < fs->n_fatent) {			/* Not a last link? */
+		while (clst < fs->n_fatent) {			/* 判断是否结束*/
 			nxt = get_fat(fs, clst);			/* Get cluster status */
 			if (nxt == 0) break;				/* Empty cluster? */
 			if (nxt == 1) { res = FR_INT_ERR; break; }	/* Internal error? */
 			if (nxt == 0xFFFFFFFF) { res = FR_DISK_ERR; break; }	/* Disk error? */
-			res = put_fat(fs, clst, 0);			/* Mark the cluster "empty" */
+			res = put_fat(fs, clst, 0);			/* 标记当前簇为空 */
 			if (res != FR_OK) break;
-			if (fs->free_clust != 0xFFFFFFFF) {	/* Update FSINFO */
+			if (fs->free_clust != 0xFFFFFFFF) {	/* 更新文件系统 */
 				fs->free_clust++;
 				fs->fsi_flag |= 1;
 			}
@@ -1022,6 +1025,7 @@ FRESULT remove_chain (
 /*-----------------------------------------------------------------------*/
 /* FAT handling - Stretch or Create a cluster chain                      */
 /*-----------------------------------------------------------------------*/
+/*创建链表*/
 #if !_FS_READONLY
 static
 DWORD create_chain (	/* 0:No free cluster, 1:Internal error, 0xFFFFFFFF:Disk error, >=2:New cluster# */
@@ -1033,11 +1037,11 @@ DWORD create_chain (	/* 0:No free cluster, 1:Internal error, 0xFFFFFFFF:Disk err
 	FRESULT res;
 
 
-	if (clst == 0) {		/* Create a new chain */
-		scl = fs->last_clust;			/* Get suggested start point */
+	if (clst == 0) {		/* 创建 */
+		scl = fs->last_clust;			/* 从最前的从未分配空簇开始 */
 		if (!scl || scl >= fs->n_fatent) scl = 1;
 	}
-	else {					/* Stretch the current chain */
+	else {					/* 连接 */
 		cs = get_fat(fs, clst);			/* Check the cluster status */
 		if (cs < 2) return 1;			/* Invalid value */
 		if (cs == 0xFFFFFFFF) return cs;	/* A disk error occurred */
@@ -1046,9 +1050,10 @@ DWORD create_chain (	/* 0:No free cluster, 1:Internal error, 0xFFFFFFFF:Disk err
 	}
 
 	ncl = scl;				/* Start cluster */
+	/*循环直到找到下一个空簇*/
 	for (;;) {
 		ncl++;							/* Next cluster */
-		if (ncl >= fs->n_fatent) {		/* Check wrap around */
+		if (ncl >= fs->n_fatent) {		/* 回到开头 */
 			ncl = 2;
 			if (ncl > scl) return 0;	/* No free cluster */
 		}
@@ -1059,12 +1064,12 @@ DWORD create_chain (	/* 0:No free cluster, 1:Internal error, 0xFFFFFFFF:Disk err
 		if (ncl == scl) return 0;		/* No free cluster */
 	}
 
-	res = put_fat(fs, ncl, 0x0FFFFFFF);	/* Mark the new cluster "last link" */
+	res = put_fat(fs, ncl, 0x0FFFFFFF);	/* 标记为文件结束 */
 	if (res == FR_OK && clst != 0) {
-		res = put_fat(fs, clst, ncl);	/* Link it to the previous one if needed */
+		res = put_fat(fs, clst, ncl);	/* 与上一个连接 */
 	}
 	if (res == FR_OK) {
-		fs->last_clust = ncl;			/* Update FSINFO */
+		fs->last_clust = ncl;			/* 更新文件系统 */
 		if (fs->free_clust != 0xFFFFFFFF) {
 			fs->free_clust--;
 			fs->fsi_flag |= 1;
@@ -1073,7 +1078,7 @@ DWORD create_chain (	/* 0:No free cluster, 1:Internal error, 0xFFFFFFFF:Disk err
 		ncl = (res == FR_DISK_ERR) ? 0xFFFFFFFF : 1;
 	}
 
-	return ncl;		/* Return new cluster number or error code */
+	return ncl;		/* 返回新簇*/
 }
 #endif /* !_FS_READONLY */
 
@@ -1112,7 +1117,7 @@ DWORD clmt_clust (	/* <2:Error, >=2:Cluster number */
 /*-----------------------------------------------------------------------*/
 /* Directory handling - Set directory index                              */
 /*-----------------------------------------------------------------------*/
-
+/*目录读写索引（不必要）*/
 static
 FRESULT dir_sdi (
 	DIR* dp,		/* Pointer to directory object */
@@ -1130,13 +1135,13 @@ FRESULT dir_sdi (
 	if (!clst && dp->fs->fs_type == FS_FAT32)	/* Replace cluster# 0 with root cluster# if in FAT32 */
 		clst = dp->fs->dirbase;
 
-	if (clst == 0) {	/* Static table (root-directory in FAT12/16) */
+	if (clst == 0) {	/* 根目录Static table (root-directory in FAT12/16) */
 		if (idx >= dp->fs->n_rootdir)	/* Is index out of range? */
 			return FR_INT_ERR;
 		sect = dp->fs->dirbase;
 	}
-	else {				/* Dynamic table (root-directory in FAT32 or sub-directory) */
-		ic = SS(dp->fs) / SZ_DIR * dp->fs->csize;	/* Entries per cluster */
+	else {				/* 子目录Dynamic table (root-directory in FAT32 or sub-directory) */
+		ic = SS(dp->fs) / SZ_DIR * dp->fs->csize;	/* Entries per cluster *//*一个目录占簇*/
 		while (idx >= ic) {	/* Follow cluster chain */
 			clst = get_fat(dp->fs, clst);				/* Get next cluster */
 			if (clst == 0xFFFFFFFF) return FR_DISK_ERR;	/* Disk error */
@@ -1160,7 +1165,7 @@ FRESULT dir_sdi (
 /*-----------------------------------------------------------------------*/
 /* Directory handling - Move directory table index next                  */
 /*-----------------------------------------------------------------------*/
-
+/*目录中下一个文件*/
 static
 FRESULT dir_next (	/* FR_OK:Succeeded, FR_NO_FILE:End of table, FR_DENIED:Could not stretch */
 	DIR* dp,		/* Pointer to the directory object */
@@ -1172,17 +1177,17 @@ FRESULT dir_next (	/* FR_OK:Succeeded, FR_NO_FILE:End of table, FR_DENIED:Could 
 
 
 	i = dp->index + 1;
-	if (!(i & 0xFFFF) || !dp->sect)	/* Report EOT when index has reached 65535 */
+	if (!(i & 0xFFFF) || !dp->sect)	/* Report EOT when index has reached 65535 文件数目过大*/
 		return FR_NO_FILE;
 
-	if (!(i % (SS(dp->fs) / SZ_DIR))) {	/* Sector changed? */
+	if (!(i % (SS(dp->fs) / SZ_DIR))) {	/* Sector changed? 超过一个扇区*/
 		dp->sect++;					/* Next sector */
 
-		if (!dp->clust) {		/* Static table */
+		if (!dp->clust) {		/* Static table 根目录*/
 			if (i >= dp->fs->n_rootdir)	/* Report EOT if it reached end of static table */
 				return FR_NO_FILE;
 		}
-		else {					/* Dynamic table */
+		else {					/* Dynamic table 子目录*/
 			if (((i / (SS(dp->fs) / SZ_DIR)) & (dp->fs->csize - 1)) == 0) {	/* Cluster changed? */
 				clst = get_fat(dp->fs, dp->clust);				/* Get next cluster */
 				if (clst <= 1) return FR_INT_ERR;
