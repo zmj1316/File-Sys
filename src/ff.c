@@ -147,7 +147,7 @@
 #define	ABORT(fs, res)		{ fp->err = (BYTE)(res); LEAVE_FF(fs, res); }
 
 
-/* Definitions of sector size 定义扇区大小*/
+/* Definitions of sector size */
 #if (_MAX_SS < _MIN_SS) || (_MAX_SS != 512 && _MAX_SS != 1024 && _MAX_SS != 2048 && _MAX_SS != 4096) || (_MIN_SS != 512 && _MIN_SS != 1024 && _MIN_SS != 2048 && _MIN_SS != 4096)
 #error Wrong sector size configuration.
 #endif
@@ -185,7 +185,7 @@ typedef struct {
 #define _DS2S	0x80	/* DBC 2nd byte range 2 start */
 #define _DS2E	0xFC	/* DBC 2nd byte range 2 end */
 
-#elif _CODE_PAGE == 936	/* Simplified Chinese GBK 应设定为简体中文*/
+#elif _CODE_PAGE == 936	/* Simplified Chinese GBK */
 #define _DF1S	0x81
 #define _DF1E	0xFE
 #define _DS1S	0x40
@@ -636,7 +636,7 @@ void unlock_fs (
 
 
 /*-----------------------------------------------------------------------*/
-/* File lock control functions    文件锁定功能暂时阉割                   */
+/* File lock control functions                                           */
 /*-----------------------------------------------------------------------*/
 #if _FS_LOCK
 
@@ -840,7 +840,7 @@ FRESULT sync_fs (	/* FR_OK: successful, FR_DISK_ERR: failed */
 
 
 /*-----------------------------------------------------------------------*/
-/* Get sector# from cluster# 返回扇区位置                                */
+/* Get sector# from cluster#                                             */
 /*-----------------------------------------------------------------------*/
 
 
@@ -967,7 +967,7 @@ FRESULT put_fat (
 
 
 /*-----------------------------------------------------------------------*/
-/* FAT handling - Remove a cluster chain         移除簇链		         */
+/* FAT handling - Remove a cluster chain                                 */
 /*-----------------------------------------------------------------------*/
 #if !_FS_READONLY
 static
@@ -992,9 +992,9 @@ FRESULT remove_chain (
 			if (nxt == 0) break;				/* Empty cluster? */
 			if (nxt == 1) { res = FR_INT_ERR; break; }	/* Internal error? */
 			if (nxt == 0xFFFFFFFF) { res = FR_DISK_ERR; break; }	/* Disk error? */
-			res = put_fat(fs, clst, 0);			/* Mark the cluster "empty"标示已经清空 */
+			res = put_fat(fs, clst, 0);			/* Mark the cluster "empty" */
 			if (res != FR_OK) break;
-			if (fs->free_clust != 0xFFFFFFFF) {	/* Update FSINFO 更新文件系统信息*/
+			if (fs->free_clust != 0xFFFFFFFF) {	/* Update FSINFO */
 				fs->free_clust++;
 				fs->fsi_flag |= 1;
 			}
@@ -1034,7 +1034,7 @@ DWORD create_chain (	/* 0:No free cluster, 1:Internal error, 0xFFFFFFFF:Disk err
 
 
 	if (clst == 0) {		/* Create a new chain */
-		scl = fs->last_clust;			/* Get suggested start point从最前的空闲簇开始 */
+		scl = fs->last_clust;			/* Get suggested start point */
 		if (!scl || scl >= fs->n_fatent) scl = 1;
 	}
 	else {					/* Stretch the current chain */
@@ -1045,7 +1045,7 @@ DWORD create_chain (	/* 0:No free cluster, 1:Internal error, 0xFFFFFFFF:Disk err
 		scl = clst;
 	}
 
-	ncl = scl;				/* 开始簇链 */
+	ncl = scl;				/* Start cluster */
 	for (;;) {
 		ncl++;							/* Next cluster */
 		if (ncl >= fs->n_fatent) {		/* Check wrap around */
@@ -1053,7 +1053,7 @@ DWORD create_chain (	/* 0:No free cluster, 1:Internal error, 0xFFFFFFFF:Disk err
 			if (ncl > scl) return 0;	/* No free cluster */
 		}
 		cs = get_fat(fs, ncl);			/* Get the cluster status */
-		if (cs == 0) break;				/* 找到下一个空闲簇 */
+		if (cs == 0) break;				/* Found a free cluster */
 		if (cs == 0xFFFFFFFF || cs == 1)/* An error occurred */
 			return cs;
 		if (ncl == scl) return 0;		/* No free cluster */
@@ -1110,7 +1110,7 @@ DWORD clmt_clust (	/* <2:Error, >=2:Cluster number */
 
 
 /*-----------------------------------------------------------------------*/
-/* Directory handling - Set directory index       设定目录                       */
+/* Directory handling - Set directory index                              */
 /*-----------------------------------------------------------------------*/
 
 static
@@ -1263,7 +1263,7 @@ FRESULT dir_alloc (
 
 
 /*-----------------------------------------------------------------------*/
-/* Directory handling - Load/Store start cluster number  存储读取起始簇  */
+/* Directory handling - Load/Store start cluster number                  */
 /*-----------------------------------------------------------------------*/
 
 static
@@ -3997,7 +3997,6 @@ FRESULT f_mkfs (
 	if (sfd > 1) return FR_INVALID_PARAMETER;
 	if (au & (au - 1)) return FR_INVALID_PARAMETER;
 	fs = FatFs[vol];
-
 	if (!fs) return FR_NOT_ENABLED;
 	fs->fs_type = 0;
 	pdrv = LD2PD(vol);	/* Physical drive */
@@ -4013,8 +4012,7 @@ FRESULT f_mkfs (
 #endif
 	if (_MULTI_PARTITION && part) {
 		/* Get partition information from partition table in the MBR */
-		if (disk_read(pdrv, fs->win, 0, 1)) return FR_DISK_ERR; 
-
+		if (disk_read(pdrv, fs->win, 0, 1)) return FR_DISK_ERR;
 		if (LD_WORD(fs->win+BS_55AA) != 0xAA55) return FR_MKFS_ABORTED;
 		tbl = &fs->win[MBR_Table + (part - 1) * SZ_PTE];
 		if (!tbl[4]) return FR_MKFS_ABORTED;	/* No partition? */
@@ -4026,7 +4024,6 @@ FRESULT f_mkfs (
 			return FR_DISK_ERR;
 		b_vol = (sfd) ? 0 : 63;		/* Volume start sector */
 		n_vol -= b_vol;				/* Volume size */
-
 	}
 
 	if (!au) {				/* AU auto selection */
@@ -4037,6 +4034,7 @@ FRESULT f_mkfs (
 	au /= SS(fs);		/* Number of sectors per cluster */
 	if (au == 0) au = 1;
 	if (au > 128) au = 128;
+
 	/* Pre-compute number of clusters and FAT sub-type */
 	n_clst = n_vol / au;
 	fmt = FS_FAT12;
@@ -4116,6 +4114,7 @@ FRESULT f_mkfs (
 			md = 0xF8;
 		}
 	}
+
 	/* Create BPB in the VBR */
 	tbl = fs->win;							/* Clear sector */
 	mem_set(tbl, 0, SS(fs));
@@ -4181,7 +4180,6 @@ FRESULT f_mkfs (
 				return FR_DISK_ERR;
 		}
 	}
-
 	/* Initialize root directory */
 	i = (fmt == FS_FAT32) ? au : (UINT)n_dir;
 	do {

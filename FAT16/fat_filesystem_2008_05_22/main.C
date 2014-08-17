@@ -28,7 +28,17 @@ $Id: main.C,v 1.1.1.1 2007/01/01 10:35:32 tony Exp $
 #include "Flash_Management\Flash_Management.h" 
 
 #include "include\FAT_cfg.h" 
+#define SUCC 0x0
+#define FAIL 0Xff
 
+/*文件系统的数据重新定义*/
+typedef unsigned char  u8;        
+typedef signed char  s8;          
+typedef unsigned int u16;          
+typedef signed int s16;            
+typedef unsigned long u32;         
+typedef signed long s32;           
+     
 /*===============================================================================
 函数
 main()
@@ -37,7 +47,7 @@ main()
 出口：无
 ===============================================================================*/ 
 FILE *file2;
-void main(void)
+int main(void)
 {
   u32 cc,bb;
   u16 COUNT;
@@ -132,7 +142,7 @@ void main(void)
    //打开readed.rar,作为写入源文件
    if ((file2 = fopen("readed.rar","rb+")) == NULL)
      {
-      return;
+      return 0;
      }
    if(HANDLE1 != FAIL)
 	{   
@@ -174,14 +184,14 @@ void main(void)
 
 	 if(ATTR & ATTR_DIRECTORY)
 	 { 
-	   mkdir(buf+3);
+	   //mkdir(buf+3);
 	   continue;
 	 }
 	 else
      {   //在windows当前目录下建立一个文件,文件名与当前枚举的文件名一致*/
 		 if ((file2 = fopen(buf+3,"wb+")) == NULL)
 		 {  
-            return;
+            return 0;
 		 }    
 	     else 
 		     HANDLE1 = open_file(buf);

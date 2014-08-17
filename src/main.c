@@ -12,13 +12,12 @@ void main (void)
     UINT br, bw;         /* 文件读/写字节计数 */
     DWORD plist[] = {50, 50, 0, 0};
     BYTE work[_MAX_SS];
-    /*printf("%d\n",f_fdisk(0, plist, work));
+    
     /* 为逻辑驱动器注册工作区 */
-    printf("%d\n",f_mount(&fs[0],"0",1));
-
-    printf("%d\n",f_mkfs("0",0,0) );
+    printf("%d\n",f_mount(&fs[0],"",1));
+    printf("%d\n",f_mkfs("",0,0) );
     getch();
     printf("%d\n",f_mkdir("test"));
-    
+    return;
 
 }

@@ -99,9 +99,10 @@ DRESULT disk_write (
 	sprintf(a,"%d.img",pdrv);
 	fp=fopen(a,"rb+");
 	fseek(fp,sector*512,0);
-	fwrite(buff, count,512,fp);
+	fwrite(buff, 512,count,fp);
 	fflush(fp);
 	fclose(fp);
+	printf("writed s:%d c:%d\n",sector,count);
 	return 0;
 }
 #endif
@@ -119,7 +120,6 @@ DRESULT disk_ioctl (
 )
 {
 	switch(cmd){
-		case CTRL_SYNC: *((DWORD*)buff)=0; break;
 		case GET_SECTOR_COUNT: *((DWORD*)buff) = 20000; break;
 		case GET_BLOCK_SIZE : *((DWORD*)buff) = 512;
 	}
