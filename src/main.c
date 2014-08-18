@@ -1,5 +1,12 @@
 #include "ff.h"
-
+const TCHAR HelpStr[] = {
+    "[Disk contorls]\n
+      di <pd#> - Initialize disk\n
+         dd [<pd#> <sect>] - Dump a secrtor\n
+         ds <pd#> - Show disk status\n
+         dl <file> - Load FAT image into RAM disk (pd#0)\n
+    "
+}
 
 
 
