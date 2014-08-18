@@ -1,5 +1,12 @@
 #include "ff.h"
-
+const TCHAR HelpStr[] = {
+    "[Disk contorls]\n
+      di <pd#> - Initialize disk\n
+         dd [<pd#> <sect>] - Dump a secrtor\n
+         ds <pd#> - Show disk status\n
+         dl <file> - Load FAT image into RAM disk (pd#0)\n
+    "
+}
 
 
 
@@ -12,7 +19,17 @@ void main (void)
     UINT br, bw;         /* 文件读/写字节计数 */
     DWORD plist[] = {50, 50, 0, 0};
     BYTE work[_MAX_SS];
+    char  cmd[100];
+    char* ptr;
+    ptr=cmd;
     
+
+    printf(">");
+    scanf("%s",ptr);
+    switch (*ptr++){
+        case 'q': return 0;
+        case '?': printf("%s\n",HelpStr ); break;
+    }
     /* 为逻辑驱动器注册工作区 */
     printf("%d\n",f_mount(&fs[0],"",1));
     printf("%d\n",f_mkfs("",0,0) );
