@@ -32,7 +32,7 @@ extern "C" {
 
 /* Definitions of volume management */
 
-#if _MULTI_PARTITION		/* Multiple partition configuration */
+#if _MULTI_PARTITION		/* Multiple partition configuration 分区模式默认关闭*/
 typedef struct {
 	BYTE pd;	/* Physical drive number */
 	BYTE pt;	/* Partition: 0:Auto detect, 1-4:Forced partition) */
@@ -75,14 +75,14 @@ typedef char TCHAR;
 /* File system object structure (FATFS) */
 
 typedef struct {
-	BYTE	fs_type;		/* FAT sub-type (0:Not mounted) */
-	BYTE	drv;			/* Physical drive number */
+	BYTE	fs_type;		/* FAT sub-type 分区类型(0:Not mounted) */
+	BYTE	drv;			/* Physical drive number 驱动器编号（012文件名）*/
 	BYTE	csize;			/* Sectors per cluster (1,2,4...128) */
 	BYTE	n_fats;			/* Number of FAT copies (1 or 2) */
-	BYTE	wflag;			/* win[] flag (b0:dirty) */
+	BYTE	wflag;			/* win[] flag (b0:dirty) 是否缓存写入*/
 	BYTE	fsi_flag;		/* FSINFO flags (b7:disabled, b0:dirty) */
-	WORD	id;				/* File system mount ID */
-	WORD	n_rootdir;		/* Number of root directory entries (FAT12/16) */
+	WORD	id;				/* File system mount ID 读写挂载*/
+	WORD	n_rootdir;		/* Number of root directory entries (FAT12/16) 根目录文件数*/
 #if _MAX_SS != _MIN_SS
 	WORD	ssize;			/* Bytes per sector (512, 1024, 2048 or 4096) */
 #endif
@@ -90,20 +90,20 @@ typedef struct {
 	_SYNC_t	sobj;			/* Identifier of sync object */
 #endif
 #if !_FS_READONLY
-	DWORD	last_clust;		/* Last allocated cluster */
-	DWORD	free_clust;		/* Number of free clusters */
+	DWORD	last_clust;		/* Last allocated cluster 最后分配簇*/
+	DWORD	free_clust;		/* Number of free clusters 空闲簇*/
 #endif
 #if _FS_RPATH
-	DWORD	cdir;			/* Current directory start cluster (0:root) */
+	DWORD	cdir;			/* Current directory start cluster (0:root) 当前目录（默认关闭）*/
 #endif
 	DWORD	n_fatent;		/* Number of FAT entries, = number of clusters + 2 */
-	DWORD	fsize;			/* Sectors per FAT */
+	DWORD	fsize;			/* Sectors per FAT 记录的大小*/
 	DWORD	volbase;		/* Volume start sector */
-	DWORD	fatbase;		/* FAT start sector */
-	DWORD	dirbase;		/* Root directory start sector (FAT32:Cluster#) */
-	DWORD	database;		/* Data start sector */
-	DWORD	winsect;		/* Current sector appearing in the win[] */
-	BYTE	win[_MAX_SS];	/* Disk access window for Directory, FAT (and file data at tiny cfg) */
+	DWORD	fatbase;		/* FAT start sector 记录开始*/
+	DWORD	dirbase;		/* Root directory start sector (FAT32:Cluster#) 根目录起始扇区*/
+	DWORD	database;		/* Data start sector 数据起始*/
+	DWORD	winsect;		/* Current sector appearing in the win[] 当前缓存的扇区数目*/
+	BYTE	win[_MAX_SS];	/* Disk access window for Directory, FAT (and file data at tiny cfg) 缓存*/
 } FATFS;
 
 
@@ -111,17 +111,17 @@ typedef struct {
 /* File object structure (FIL) */
 
 typedef struct {
-	FATFS*	fs;				/* Pointer to the related file system object (**do not change order**) */
-	WORD	id;				/* Owner file system mount ID (**do not change order**) */
-	BYTE	flag;			/* Status flags */
+	FATFS*	fs;				/* Pointer to the related file system object (**do not change order**) 文件系统指针*/
+	WORD	id;				/* Owner file system mount ID (**do not change order**) 挂载id*/
+	BYTE	flag;			/* Status flags 状态*/
 	BYTE	err;			/* Abort flag (error code) */
 	DWORD	fptr;			/* File read/write pointer (Zeroed on file open) */
 	DWORD	fsize;			/* File size */
 	DWORD	sclust;			/* File start cluster (0:no cluster chain, always 0 when fsize is 0) */
-	DWORD	clust;			/* Current cluster of fpter (not valid when fprt is 0) */
-	DWORD	dsect;			/* Sector number appearing in buf[] (0:invalid) */
+	DWORD	clust;			/* Current cluster of fpter (not valid when fprt is 0)当前指针簇 */
+	DWORD	dsect;			/* Sector number appearing in buf[] (0:invalid) 缓存扇区数*/
 #if !_FS_READONLY
-	DWORD	dir_sect;		/* Sector number containing the directory entry */
+	DWORD	dir_sect;		/* Sector number containing the directory entry 目录记录所在扇区*/
 	BYTE*	dir_ptr;		/* Pointer to the directory entry in the win[] */
 #endif
 #if _USE_FASTSEEK
@@ -131,22 +131,22 @@ typedef struct {
 	UINT	lockid;			/* File lock ID origin from 1 (index of file semaphore table Files[]) */
 #endif
 #if !_FS_TINY
-	BYTE	buf[_MAX_SS];	/* File private data read/write window */
+	BYTE	buf[_MAX_SS];	/* File private data read/write window 读写缓存*/
 #endif
 } FIL;
 
 
 
-/* Directory object structure (DIR) */
+/* Directory object structure (DIR) 目录结构*/
 
 typedef struct {
 	FATFS*	fs;				/* Pointer to the owner file system object (**do not change order**) */
 	WORD	id;				/* Owner file system mount ID (**do not change order**) */
-	WORD	index;			/* Current read/write index number */
-	DWORD	sclust;			/* Table start cluster (0:Root dir) */
-	DWORD	clust;			/* Current cluster */
+	WORD	index;			/* Current read/write index number 当前读写文件索引号*/
+	DWORD	sclust;			/* Table start cluster (0:Root dir) 起始簇*/
+	DWORD	clust;			/* Current cluster 当前簇*/
 	DWORD	sect;			/* Current sector */
-	BYTE*	dir;			/* Pointer to the current SFN entry in the win[] */
+	BYTE*	dir;			/* Pointer to the current SFN entry in the win[] 缓存中的文件名指针*/
 	BYTE*	fn;				/* Pointer to the SFN (in/out) {file[8],ext[3],status[1]} */
 #if _FS_LOCK
 	UINT	lockid;			/* File lock ID (index of file semaphore table Files[]) */
@@ -159,14 +159,14 @@ typedef struct {
 
 
 
-/* File status structure (FILINFO) */
+/* File status structure (FILINFO) 文件信息*/
 
 typedef struct {
-	DWORD	fsize;			/* File size */
-	WORD	fdate;			/* Last modified date */
-	WORD	ftime;			/* Last modified time */
-	BYTE	fattrib;		/* Attribute */
-	TCHAR	fname[13];		/* Short file name (8.3 format) */
+	DWORD	fsize;			/* File size 大小*/
+	WORD	fdate;			/* Last modified date 编辑日期*/
+	WORD	ftime;			/* Last modified time 时间*/
+	BYTE	fattrib;		/* Attribute 属性*/
+	TCHAR	fname[13];		/* Short file name (8.3 format) 文件名*/
 #if _USE_LFN
 	TCHAR*	lfname;			/* Pointer to the LFN buffer */
 	UINT 	lfsize;			/* Size of LFN buffer in TCHAR */
@@ -175,7 +175,7 @@ typedef struct {
 
 
 
-/* File function return code (FRESULT) */
+/* File function return code (FRESULT) 返回信息*/
 
 typedef enum {
 	FR_OK = 0,				/* (0) Succeeded */
@@ -282,7 +282,7 @@ int ff_del_syncobj (_SYNC_t sobj);				/* Delete a sync object */
 
 
 /* File access control and file status flags (FIL.flag) */
-
+/*文件控制方式*/
 #define	FA_READ				0x01
 #define	FA_OPEN_EXISTING	0x00
 
@@ -303,7 +303,7 @@ int ff_del_syncobj (_SYNC_t sobj);				/* Delete a sync object */
 #define FS_FAT32	3
 
 
-/* File attribute bits for directory entry */
+/* File attribute bits for directory entry 文件属性*/
 
 #define	AM_RDO	0x01	/* Read only */
 #define	AM_HID	0x02	/* Hidden */
@@ -322,7 +322,7 @@ int ff_del_syncobj (_SYNC_t sobj);				/* Delete a sync object */
 
 /*--------------------------------*/
 /* Multi-byte word access macros  */
-
+/*多字节转换*/
 #if _WORD_ACCESS == 1	/* Enable word access to the FAT structure */
 #define	LD_WORD(ptr)		(WORD)(*(WORD*)(BYTE*)(ptr))
 #define	LD_DWORD(ptr)		(DWORD)(*(DWORD*)(BYTE*)(ptr))

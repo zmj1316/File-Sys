@@ -862,7 +862,7 @@ DWORD clust2sect (	/* !=0: Sector number, 0: Failed - invalid cluster# */
 /* FAT access - Read value of a FAT entry                                */
 /*-----------------------------------------------------------------------*/
 
-/*读取fat中簇,返回状态*/
+/*读取fat中入口并返回*/
 DWORD get_fat (	/* 0xFFFFFFFF:Disk error, 1:Internal error, Else:Cluster status */
 	FATFS* fs,	/* File system object */
 	DWORD clst	/* Cluster# to get the link information */
@@ -907,7 +907,7 @@ DWORD get_fat (	/* 0xFFFFFFFF:Disk error, 1:Internal error, Else:Cluster status 
 /*-----------------------------------------------------------------------*/
 /* FAT access - Change value of a FAT entry                              */
 /*-----------------------------------------------------------------------*/
-/*簇状态写入fat*/
+/*簇写入fat入口*/
 #if !_FS_READONLY
 
 FRESULT put_fat (
@@ -1117,7 +1117,7 @@ DWORD clmt_clust (	/* <2:Error, >=2:Cluster number */
 /*-----------------------------------------------------------------------*/
 /* Directory handling - Set directory index                              */
 /*-----------------------------------------------------------------------*/
-/*目录读写索引（不必要）*/
+/*根据目录索引读取目录*/
 static
 FRESULT dir_sdi (
 	DIR* dp,		/* Pointer to directory object */
@@ -1141,7 +1141,7 @@ FRESULT dir_sdi (
 		sect = dp->fs->dirbase;
 	}
 	else {				/* 子目录Dynamic table (root-directory in FAT32 or sub-directory) */
-		ic = SS(dp->fs) / SZ_DIR * dp->fs->csize;	/* Entries per cluster *//*一个目录占簇*/
+		ic = SS(dp->fs) / SZ_DIR * dp->fs->csize;	/* Entries per cluster *//*一个簇包含的入口数*/
 		while (idx >= ic) {	/* Follow cluster chain */
 			clst = get_fat(dp->fs, clst);				/* Get next cluster */
 			if (clst == 0xFFFFFFFF) return FR_DISK_ERR;	/* Disk error */
@@ -1153,8 +1153,8 @@ FRESULT dir_sdi (
 	}
 	dp->clust = clst;	/* Current cluster# */
 	if (!sect) return FR_INT_ERR;
-	dp->sect = sect + idx / (SS(dp->fs) / SZ_DIR);					/* Sector# of the directory entry */
-	dp->dir = dp->fs->win + (idx % (SS(dp->fs) / SZ_DIR)) * SZ_DIR;	/* Ptr to the entry in the sector */
+	dp->sect = sect + idx / (SS(dp->fs) / SZ_DIR);					/* Sector# of the directory entry 当前索引扇区*/
+	dp->dir = dp->fs->win + (idx % (SS(dp->fs) / SZ_DIR)) * SZ_DIR;	/* Ptr to the entry in the sector 缓存中的文件名位置*/
 
 	return FR_OK;
 }
@@ -1165,11 +1165,11 @@ FRESULT dir_sdi (
 /*-----------------------------------------------------------------------*/
 /* Directory handling - Move directory table index next                  */
 /*-----------------------------------------------------------------------*/
-/*目录中下一个文件*/
+/*目录中下一个文件（扩展目录）*/
 static
 FRESULT dir_next (	/* FR_OK:Succeeded, FR_NO_FILE:End of table, FR_DENIED:Could not stretch */
 	DIR* dp,		/* Pointer to the directory object */
-	int stretch		/* 0: Do not stretch table, 1: Stretch table if needed */
+	int stretch		/* 0: Do not stretch table, 1: Stretch table if needed 是否延伸目录表*/
 )
 {
 	DWORD clst;
@@ -1221,7 +1221,7 @@ FRESULT dir_next (	/* FR_OK:Succeeded, FR_NO_FILE:End of table, FR_DENIED:Could 
 		}
 	}
 
-	dp->index = (WORD)i;	/* Current index */
+	dp->index = (WORD)i;	/* Current index 当前文件索引编号*/
 	dp->dir = dp->fs->win + (i % (SS(dp->fs) / SZ_DIR)) * SZ_DIR;	/* Current entry in the window */
 
 	return FR_OK;
@@ -1233,7 +1233,7 @@ FRESULT dir_next (	/* FR_OK:Succeeded, FR_NO_FILE:End of table, FR_DENIED:Could 
 /*-----------------------------------------------------------------------*/
 /* Directory handling - Reserve directory entry                          */
 /*-----------------------------------------------------------------------*/
-
+/*分配目录中的入口*/
 #if !_FS_READONLY
 static
 FRESULT dir_alloc (
@@ -1248,7 +1248,7 @@ FRESULT dir_alloc (
 	res = dir_sdi(dp, 0);
 	if (res == FR_OK) {
 		n = 0;
-		do {
+		do {/*找空*/
 			res = move_window(dp->fs, dp->sect);
 			if (res != FR_OK) break;
 			if (dp->dir[0] == DDE || dp->dir[0] == 0) {	/* Is it a blank entry? */
@@ -1256,7 +1256,7 @@ FRESULT dir_alloc (
 			} else {
 				n = 0;					/* Not a blank entry. Restart to search */
 			}
-			res = dir_next(dp, 1);		/* Next entry with table stretch enabled */
+			res = dir_next(dp, 1);		/* Next entry with table stretch enabled 扩展目录*/
 		} while (res == FR_OK);
 	}
 	if (res == FR_NO_FILE) res = FR_DENIED;	/* No directory entry to allocate */
@@ -1270,7 +1270,7 @@ FRESULT dir_alloc (
 /*-----------------------------------------------------------------------*/
 /* Directory handling - Load/Store start cluster number                  */
 /*-----------------------------------------------------------------------*/
-
+/*写入/读取目录起始簇*/
 static
 DWORD ld_clust (
 	FATFS* fs,	/* Pointer to the fs object */
@@ -1295,7 +1295,7 @@ void st_clust (
 )
 {
 	ST_WORD(dir+DIR_FstClusLO, cl);
-	ST_WORD(dir+DIR_FstClusHI, cl >> 16);
+	ST_WORD(dir+DIR_FstClusHI, cl >> 16);/*用于fat32*/
 }
 #endif
 
@@ -1490,7 +1490,7 @@ BYTE sum_sfn (
 /*-----------------------------------------------------------------------*/
 /* Directory handling - Find an object in the directory                  */
 /*-----------------------------------------------------------------------*/
-
+/*目录中查找*/
 static
 FRESULT dir_find (
 	DIR* dp			/* Pointer to the directory object linked to the file name */
@@ -1502,7 +1502,7 @@ FRESULT dir_find (
 	BYTE a, ord, sum;
 #endif
 
-	res = dir_sdi(dp, 0);			/* Rewind directory object */
+	res = dir_sdi(dp, 0);			/* Rewind directory object 重置*/
 	if (res != FR_OK) return res;
 
 #if _USE_LFN
@@ -1511,7 +1511,7 @@ FRESULT dir_find (
 	do {
 		res = move_window(dp->fs, dp->sect);
 		if (res != FR_OK) break;
-		dir = dp->dir;					/* Ptr to the directory entry of current index */
+		dir = dp->dir;					/* Ptr to the directory entry of current index 当前索引的文件名*/
 		c = dir[DIR_Name];
 		if (c == 0) { res = FR_NO_FILE; break; }	/* Reached to end of table */
 #if _USE_LFN	/* LFN configuration */
@@ -1536,10 +1536,10 @@ FRESULT dir_find (
 			}
 		}
 #else		/* Non LFN configuration */
-		if (!(dir[DIR_Attr] & AM_VOL) && !mem_cmp(dir, dp->fn, 11)) /* Is it a valid entry? */
+		if (!(dir[DIR_Attr] & AM_VOL) && !mem_cmp(dir, dp->fn, 11)) /* Is it a valid entry? 找到退出*/
 			break;
 #endif
-		res = dir_next(dp, 0);		/* Next entry */
+		res = dir_next(dp, 0);		/* Next entry 下一个项*/
 	} while (res == FR_OK);
 
 	return res;
@@ -1549,7 +1549,7 @@ FRESULT dir_find (
 
 
 /*-----------------------------------------------------------------------*/
-/* Read an object from the directory                                     */
+/* Read an object from the directory     从目录读取         */
 /*-----------------------------------------------------------------------*/
 #if _FS_MINIMIZE <= 1 || _USE_LABEL || _FS_RPATH >= 2
 static
@@ -1663,18 +1663,18 @@ FRESULT dir_register (	/* FR_OK:Successful, FR_DENIED:No free entry or too many 
 		}
 	}
 #else	/* Non LFN configuration */
-	res = dir_alloc(dp, 1);		/* Allocate an entry for SFN */
+	res = dir_alloc(dp, 1);		/* Allocate an entry for SFN 分配入口*/
 #endif
 
 	if (res == FR_OK) {				/* Set SFN entry */
 		res = move_window(dp->fs, dp->sect);
 		if (res == FR_OK) {
 			mem_set(dp->dir, 0, SZ_DIR);	/* Clean the entry */
-			mem_cpy(dp->dir, dp->fn, 11);	/* Put SFN */
+			mem_cpy(dp->dir, dp->fn, 11);	/* Put SFN 写入文件名*/
 #if _USE_LFN
 			dp->dir[DIR_NTres] = dp->fn[NS] & (NS_BODY | NS_EXT);	/* Put NT flag */
 #endif
-			dp->fs->wflag = 1;
+			dp->fs->wflag = 1;/*等待写入*/
 		}
 	}
 
@@ -1714,11 +1714,11 @@ FRESULT dir_remove (	/* FR_OK: Successful, FR_DISK_ERR: A disk error */
 	}
 
 #else			/* Non LFN configuration */
-	res = dir_sdi(dp, dp->index);
+	res = dir_sdi(dp, dp->index);/*跳转到索引文件*/
 	if (res == FR_OK) {
 		res = move_window(dp->fs, dp->sect);
 		if (res == FR_OK) {
-			mem_set(dp->dir, 0, SZ_DIR);	/* Clear and mark the entry "deleted" */
+			mem_set(dp->dir, 0, SZ_DIR);	/* Clear and mark the entry "deleted" 标记为删除*/
 			*dp->dir = DDE;
 			dp->fs->wflag = 1;
 		}
@@ -1733,7 +1733,7 @@ FRESULT dir_remove (	/* FR_OK: Successful, FR_DISK_ERR: A disk error */
 
 
 /*-----------------------------------------------------------------------*/
-/* Get file information from directory entry                             */
+/* Get file information from directory entry     获取文件信息                  */
 /*-----------------------------------------------------------------------*/
 #if _FS_MINIMIZE <= 1 || _FS_RPATH >= 2
 static
@@ -1768,7 +1768,7 @@ void get_fileinfo (		/* No return code */
 #endif
 			*p++ = c;
 		}
-		fno->fattrib = dir[DIR_Attr];				/* Attribute */
+		fno->fattrib = dir[DIR_Attr];				/* Attribute 读取属性*/
 		fno->fsize = LD_DWORD(dir+DIR_FileSize);	/* Size */
 		fno->fdate = LD_WORD(dir+DIR_WrtDate);		/* Date */
 		fno->ftime = LD_WORD(dir+DIR_WrtTime);		/* Time */
@@ -1803,7 +1803,7 @@ void get_fileinfo (		/* No return code */
 
 
 /*-----------------------------------------------------------------------*/
-/* Pick a segment and create the object name in directory form           */
+/* Pick a segment and create the object name in directory form  处理路径    */
 /*-----------------------------------------------------------------------*/
 
 static
@@ -1819,7 +1819,7 @@ FRESULT create_name (
 	const TCHAR *p;
 
 	/* Create LFN in Unicode */
-	for (p = *path; *p == '/' || *p == '\\'; p++) ;	/* Strip duplicated separator */
+	for (p = *path; *p == '/' || *p == '\\'; p++) ;	/* Strip duplicated separator 输入路径处理*/
 	lfn = dp->lfn;
 	si = di = 0;
 	for (;;) {
@@ -1981,7 +1981,7 @@ FRESULT create_name (
 			sfn[i++] = c;
 			sfn[i++] = d;
 		} else {						/* Single byte code */
-			if (chk_chr("\"*+,:;<=>\?[]|\x7F", c))	/* Reject illegal chrs for SFN */
+			if (chk_chr("\"*+,:;<=>\?[]|\x7F", c))	/* Reject illegal chrs for SFN 检查文件名*/
 				return FR_INVALID_NAME;
 			if (IsUpper(c)) {			/* ASCII large capital? */
 				b |= 2;
@@ -1993,10 +1993,10 @@ FRESULT create_name (
 			sfn[i++] = c;
 		}
 	}
-	*path = &p[si];						/* Return pointer to the next segment */
+	*path = &p[si];						/* Return pointer to the next segment 返回新的指针*/
 	c = (c <= ' ') ? NS_LAST : 0;		/* Set last segment flag if end of path */
 
-	if (!i) return FR_INVALID_NAME;		/* Reject nul string */
+	if (!i) return FR_INVALID_NAME;		/* Reject nul string 无效*/
 	if (sfn[0] == DDE) sfn[0] = NDDE;	/* When first character collides with DDE, replace it with 0x05 */
 
 	if (ni == 8) b <<= 2;
@@ -2018,7 +2018,7 @@ FRESULT create_name (
 
 static
 FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
-	DIR* dp,			/* Directory object to return last directory and found object */
+	DIR* dp,			/* Directory object to return last directory and found object 返回最后的目录和文件*/
 	const TCHAR* path	/* Full-path string to find a file or directory */
 )
 {
@@ -2035,19 +2035,19 @@ FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
 #else
 	if (*path == '/' || *path == '\\')		/* Strip heading separator if exist */
 		path++;
-	dp->sclust = 0;							/* Always start from the root directory */
+	dp->sclust = 0;							/* Always start from the root directory根目录开始 */
 #endif
 
-	if ((UINT)*path < ' ') {				/* Null path name is the origin directory itself */
+	if ((UINT)*path < ' ') {				/* Null path name is the origin directory itself 空目录名*/
 		res = dir_sdi(dp, 0);
 		dp->dir = 0;
 	} else {								/* Follow path */
 		for (;;) {
 			res = create_name(dp, &path);	/* Get a segment name of the path */
 			if (res != FR_OK) break;
-			res = dir_find(dp);				/* Find an object with the sagment name */
+			res = dir_find(dp);				/* Find an object with the sagment name 查找文件*/
 			ns = dp->fn[NS];
-			if (res != FR_OK) {				/* Failed to find the object */
+			if (res != FR_OK) {				/* Failed to find the object 没有文件*/
 				if (res == FR_NO_FILE) {	/* Object is not found */
 					if (_FS_RPATH && (ns & NS_DOT)) {	/* If dot entry is not exist, */
 						dp->sclust = 0; dp->dir = 0;	/* it is the root directory and stay there */
@@ -2059,12 +2059,12 @@ FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
 				}
 				break;
 			}
-			if (ns & NS_LAST) break;			/* Last segment matched. Function completed. */
-			dir = dp->dir;						/* Follow the sub-directory */
-			if (!(dir[DIR_Attr] & AM_DIR)) {	/* It is not a sub-directory and cannot follow */
+			if (ns & NS_LAST) break;			/* Last segment matched. Function completed. 到达最后*/
+			dir = dp->dir;						/* Follow the sub-directory 进入子目录*/
+			if (!(dir[DIR_Attr] & AM_DIR)) {	/* It is not a sub-directory and cannot follow 不是子目录无法继续*/
 				res = FR_NO_PATH; break;
 			}
-			dp->sclust = ld_clust(dp->fs, dir);
+			dp->sclust = ld_clust(dp->fs, dir);/*更新返回信息进入子目录*/
 		}
 	}
 
@@ -2077,7 +2077,7 @@ FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
 /*-----------------------------------------------------------------------*/
 /* Get logical drive number from path name                               */
 /*-----------------------------------------------------------------------*/
-
+/*默认返回0()*/
 static
 int get_ldnumber (		/* Returns logical drive number (-1:invalid drive) */
 	const TCHAR** path	/* Pointer to pointer to the path name */
@@ -2134,7 +2134,7 @@ int get_ldnumber (		/* Returns logical drive number (-1:invalid drive) */
 
 
 /*-----------------------------------------------------------------------*/
-/* Load a sector and check if it is an FAT boot sector                   */
+/* Load a sector and check if it is an FAT boot sector  检查是否是启动扇区                 */
 /*-----------------------------------------------------------------------*/
 
 static
@@ -2162,7 +2162,7 @@ BYTE check_fs (	/* 0:FAT boor sector, 1:Valid boor sector but not FAT, 2:Not a b
 
 
 /*-----------------------------------------------------------------------*/
-/* Find logical drive and check if the volume is mounted                 */
+/* Find logical drive and check if the volume is mounted   检查是否挂载       */
 /*-----------------------------------------------------------------------*/
 
 static
@@ -2333,7 +2333,7 @@ FRESULT find_volume (	/* FR_OK(0): successful, !=0: any error occurred */
 
 
 /*-----------------------------------------------------------------------*/
-/* Check if the file/directory object is valid or not                    */
+/* Check if the file/directory object is valid or not        检查是否有效            */
 /*-----------------------------------------------------------------------*/
 
 static
@@ -2382,7 +2382,7 @@ FRESULT f_mount (
 	const TCHAR *rp = path;
 
 
-	vol = get_ldnumber(&rp);
+	vol = get_ldnumber(&rp);/*返回0*/
 	if (vol < 0) return FR_INVALID_DRIVE;
 	cfs = FatFs[vol];					/* Pointer to fs object */
 
@@ -3974,8 +3974,8 @@ FRESULT f_forward (
 /*-----------------------------------------------------------------------*/
 /* Create File System on the Drive                                       */
 /*-----------------------------------------------------------------------*/
-#define N_ROOTDIR	512		/* Number of root directory entries for FAT12/16 */
-#define N_FATS		1		/* Number of FAT copies (1 or 2) */
+#define N_ROOTDIR	512		/* Number of root directory entries for FAT12/16 根目录项目数*/
+#define N_FATS		1		/* Number of FAT copies (1 or 2) fat数*/
 
 
 FRESULT f_mkfs (
