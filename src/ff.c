@@ -415,7 +415,7 @@ typedef struct {
 /* FatFs refers the members in the FAT structures as byte array instead of
 / structure member because the structure is not binary compatible between
 / different platforms */
-
+/*以下为文件系统结构定义*/
 #define BS_jmpBoot			0		/* Jump instruction (3) */
 #define BS_OEMName			3		/* OEM name (8) */
 #define BPB_BytsPerSec		11		/* Sector size [byte] (2) */
@@ -3980,7 +3980,7 @@ FRESULT f_forward (
 
 FRESULT f_mkfs (
 	const TCHAR* path,	/* Logical drive number */
-	BYTE sfd,			/* Partitioning rule 0:FDISK, 1:SFD */
+	BYTE sfd,			/* Partitioning rule 0:FDISK, 1:SFD 默认1*/
 	UINT au				/* Allocation unit [bytes] */
 )
 {
@@ -4004,11 +4004,11 @@ FRESULT f_mkfs (
 	fs = FatFs[vol];
 	if (!fs) return FR_NOT_ENABLED;
 	fs->fs_type = 0;
-	pdrv = LD2PD(vol);	/* Physical drive */
-	part = LD2PT(vol);	/* Partition (0:auto detect, 1-4:get from partition table)*/
+	pdrv = LD2PD(vol);	/* Physical drive 文件012*/
+	part = LD2PT(vol);	/* Partition (0:auto detect, 1-4:get from partition table)分区默认关闭0*/
 
 	/* Get disk statics */
-	stat = disk_initialize(pdrv);
+	stat = disk_initialize(pdrv);/*初始化*/
 	if (stat & STA_NOINIT) return FR_NOT_READY;
 	if (stat & STA_PROTECT) return FR_WRITE_PROTECTED;
 #if _MAX_SS != _MIN_SS		/* Get disk sector size */
@@ -4024,29 +4024,29 @@ FRESULT f_mkfs (
 		b_vol = LD_DWORD(tbl+8);	/* Volume start sector */
 		n_vol = LD_DWORD(tbl+12);	/* Volume size */
 	} else {
-		/* Create a partition in this function */
+		/* Create a partition in this function 创建*/
 		if (disk_ioctl(pdrv, GET_SECTOR_COUNT, &n_vol) != RES_OK || n_vol < 128)
 			return FR_DISK_ERR;
-		b_vol = (sfd) ? 0 : 63;		/* Volume start sector */
-		n_vol -= b_vol;				/* Volume size */
+		b_vol = (sfd) ? 0 : 63;		/* Volume start sector 初始扇区*/
+		n_vol -= b_vol;				/* Volume size 卷大小*/
 	}
 
-	if (!au) {				/* AU auto selection */
+	if (!au) {				/* AU auto selection 自动选择*/
 		vs = n_vol / (2000 / (SS(fs) / 512));
 		for (i = 0; vs < vst[i]; i++) ;
 		au = cst[i];
 	}
-	au /= SS(fs);		/* Number of sectors per cluster */
+	au /= SS(fs);		/* Number of sectors per cluster 簇扇区数*/
 	if (au == 0) au = 1;
 	if (au > 128) au = 128;
 
-	/* Pre-compute number of clusters and FAT sub-type */
+	/* Pre-compute number of clusters and FAT sub-type 根据簇确定类型，默认fat16*/
 	n_clst = n_vol / au;
 	fmt = FS_FAT12;
 	if (n_clst >= MIN_FAT16) fmt = FS_FAT16;
 	if (n_clst >= MIN_FAT32) fmt = FS_FAT32;
 
-	/* Determine offset and size of FAT structure */
+	/* Determine offset and size of FAT structure 确定fat大小*/
 	if (fmt == FS_FAT32) {
 		n_fat = ((n_clst * 4) + 8 + SS(fs) - 1) / SS(fs);
 		n_rsv = 32;
@@ -4057,9 +4057,9 @@ FRESULT f_mkfs (
 		n_rsv = 1;
 		n_dir = (DWORD)N_ROOTDIR * SZ_DIR / SS(fs);
 	}
-	b_fat = b_vol + n_rsv;				/* FAT area start sector */
-	b_dir = b_fat + n_fat * N_FATS;		/* Directory area start sector */
-	b_data = b_dir + n_dir;				/* Data area start sector */
+	b_fat = b_vol + n_rsv;				/* FAT area start sector fat起始扇区*/
+	b_dir = b_fat + n_fat * N_FATS;		/* Directory area start sector目录起始扇区 */
+	b_data = b_dir + n_dir;				/* Data area start sector 数据起始扇区*/
 	if (n_vol < b_data + au - b_vol) return FR_MKFS_ABORTED;	/* Too small volume */
 
 	/* Align data start sector to erase block boundary (for flash memory media) */
@@ -4098,7 +4098,7 @@ FRESULT f_mkfs (
 			return FR_DISK_ERR;
 		md = 0xF8;
 	} else {
-		if (sfd) {	/* No partition table (SFD) */
+		if (sfd) {	/* No partition table (SFD) 默认无分区表*/
 			md = 0xF0;
 		} else {	/* Create partition table (FDISK) */
 			mem_set(fs->win, 0, SS(fs));
@@ -4120,16 +4120,16 @@ FRESULT f_mkfs (
 		}
 	}
 
-	/* Create BPB in the VBR */
+	/* Create BPB in the VBR 创建记录*/
 	tbl = fs->win;							/* Clear sector */
 	mem_set(tbl, 0, SS(fs));
-	mem_cpy(tbl, "\xEB\xFE\x90" "MSDOS5.0", 11);/* Boot jump code, OEM name */
-	i = SS(fs);								/* Sector size */
+	mem_cpy(tbl, "\xEB\xFE\x90" "MSDOS5.0", 11);/* Boot jump code, OEM name 启动*/
+	i = SS(fs);								/* Sector size 扇区大小*/
 	ST_WORD(tbl+BPB_BytsPerSec, i);
 	tbl[BPB_SecPerClus] = (BYTE)au;			/* Sectors per cluster */
 	ST_WORD(tbl+BPB_RsvdSecCnt, n_rsv);		/* Reserved sectors */
-	tbl[BPB_NumFATs] = N_FATS;				/* Number of FATs */
-	i = (fmt == FS_FAT32) ? 0 : N_ROOTDIR;	/* Number of root directory entries */
+	tbl[BPB_NumFATs] = N_FATS;				/* Number of FATs fat数目*/
+	i = (fmt == FS_FAT32) ? 0 : N_ROOTDIR;	/* Number of root directory entries 根目录项目数512*/
 	ST_WORD(tbl+BPB_RootEntCnt, i);
 	if (n_vol < 0x10000) {					/* Number of total sectors */
 		ST_WORD(tbl+BPB_TotSec16, n_vol);
@@ -4152,18 +4152,18 @@ FRESULT f_mkfs (
 		mem_cpy(tbl+BS_VolLab32, "NO NAME    " "FAT32   ", 19);	/* Volume label, FAT signature */
 	} else {
 		ST_DWORD(tbl+BS_VolID, n);			/* VSN */
-		ST_WORD(tbl+BPB_FATSz16, n_fat);	/* Number of sectors per FAT */
+		ST_WORD(tbl+BPB_FATSz16, n_fat);	/* Number of sectors per FAT fat所占扇区数*/
 		tbl[BS_DrvNum] = 0x80;				/* Drive number */
 		tbl[BS_BootSig] = 0x29;				/* Extended boot signature */
 		mem_cpy(tbl+BS_VolLab, "NO NAME    " "FAT     ", 19);	/* Volume label, FAT signature */
 	}
 	ST_WORD(tbl+BS_55AA, 0xAA55);			/* Signature (Offset is fixed here regardless of sector size) */
-	if (disk_write(pdrv, tbl, b_vol, 1))	/* Write it to the VBR sector */
+	if (disk_write(pdrv, tbl, b_vol, 1))	/* Write it to the VBR sector 缓存写入*/
 		return FR_DISK_ERR;
 	if (fmt == FS_FAT32)					/* Write backup VBR if needed (VBR+6) */
 		disk_write(pdrv, tbl, b_vol + 6, 1);
 
-	/* Initialize FAT area */
+	/* Initialize FAT area 初始化fat*/
 	wsect = b_fat;
 	for (i = 0; i < N_FATS; i++) {		/* Initialize each FAT copy */
 		mem_set(tbl, 0, SS(fs));			/* 1st sector of the FAT  */
@@ -4175,7 +4175,7 @@ FRESULT f_mkfs (
 			n |= 0xFFFFFF00;
 			ST_DWORD(tbl+0, n);				/* Reserve cluster #0-1 (FAT32) */
 			ST_DWORD(tbl+4, 0xFFFFFFFF);
-			ST_DWORD(tbl+8, 0x0FFFFFFF);	/* Reserve cluster #2 for root directory */
+			ST_DWORD(tbl+8, 0x0FFFFFFF);	/* Reserve cluster #2 for root directory 根目录保留扇区*/
 		}
 		if (disk_write(pdrv, tbl, wsect++, 1))
 			return FR_DISK_ERR;
@@ -4185,7 +4185,7 @@ FRESULT f_mkfs (
 				return FR_DISK_ERR;
 		}
 	}
-	/* Initialize root directory */
+	/* Initialize root directory 初始化根目录*/
 	i = (fmt == FS_FAT32) ? au : (UINT)n_dir;
 	do {
 		if (disk_write(pdrv, tbl, wsect++, 1))
