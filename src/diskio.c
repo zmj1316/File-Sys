@@ -121,7 +121,7 @@ DRESULT disk_ioctl (
 {
 	switch(cmd){
 		case GET_SECTOR_COUNT: *((DWORD*)buff) = 20000; break;
-		case GET_BLOCK_SIZE : *((DWORD*)buff) = 512;
+		case GET_SECTOR_SIZE : *((DWORD*)buff) = 512;
 	}
 	return 0;
 }

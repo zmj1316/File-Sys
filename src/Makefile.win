@@ -31,5 +31,5 @@ diskio.o: diskio.c diskio.h integer.h d:/Dev-Cpp/include/windows.h   d:/Dev-Cpp/
 ff.o: ff.c ff.h integer.h d:/Dev-Cpp/include/windows.h   d:/Dev-Cpp/include/tchar.h ffconf.h diskio.h
 	$(CC) -c ff.c -o ff.o $(CFLAGS)
 
-main.o: main.c ff.h integer.h d:/Dev-Cpp/include/windows.h   d:/Dev-Cpp/include/tchar.h ffconf.h
+main.o: main.c d:/Dev-Cpp/include/string.h d:/Dev-Cpp/include/_mingw.h   d:/Dev-Cpp/include/stddef.h d:/Dev-Cpp/include/stdarg.h   d:/Dev-Cpp/include/stdio.h d:/Dev-Cpp/include/locale.h diskio.h   integer.h d:/Dev-Cpp/include/windows.h d:/Dev-Cpp/include/tchar.h ff.h   ffconf.h
 	$(CC) -c main.c -o main.o $(CFLAGS)
