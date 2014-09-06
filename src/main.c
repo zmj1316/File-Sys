@@ -155,113 +155,105 @@ void main (void)
     FATFS *fs;              /* Pointer to file system object */
     DIR dir;                /* Directory object */
     FIL file[2];            /* File objects */
+    FILINFO fno;
 
+    while(1){
+        ptr=cmd;
+        printf(">");
+        scanf("%s",ptr);
+        switch (*ptr++){
+            case 'q': return 0;
+            case '?': printf("%s\n",HelpStr ); break;
+            case 'd':  /* Disk I/O command */
+                switch (*ptr++) {   /* 第二个指令 */
+                case 'd' :  /* dd [<pd#> <sect>] - Dump a secrtor */
+                    if (!xatoi(&ptr, &p1)) {
+                        p1 = drv; p2 = sect;
+                    } else {
+                        if (!xatoi(&ptr, &p2)) break;
+                    }
+                    res = disk_read((BYTE)p1, Buff, p2, 1);
+                    if (res) { printf("rc=%d\n", (WORD)res); break; }
+                    printf("Drive:%u Sector:%lu\n", p1, p2);
+                    if (disk_ioctl((BYTE)p1, GET_SECTOR_SIZE, &w) != RES_OK) break;
+                    sect = p2 + 1; drv = p1; 
+                    for (buf = Buff, ofs = 0; ofs < w; buf += 16, ofs += 16)
+                        put_dump(buf, ofs, 16);
+                    break;
 
-while(1){
-    ptr=cmd;
-    printf(">");
-    scanf("%s",ptr);
-    switch (*ptr++){
-        case 'q': return 0;
-        case '?': printf("%s\n",HelpStr ); break;
-        case 'd' :  /* Disk I/O command */
-            switch (*ptr++) {   /* 第二个指令 */
-            case 'd' :  /* dd [<pd#> <sect>] - Dump a secrtor */
-                if (!xatoi(&ptr, &p1)) {
-                    p1 = drv; p2 = sect;
-                } else {
-                    if (!xatoi(&ptr, &p2)) break;
+                    
+                case 'i' :  /* di <pd#> - 磁盘初始化 */
+                    if (!xatoi(&ptr, &p1)) break;
+                    res = disk_initialize((BYTE)p1);
+                    printf("rc=%d\n", res);
+                    if (disk_ioctl((BYTE)p1, GET_SECTOR_SIZE, &w) == RES_OK)
+                        printf("Sector size = %u\n", w);
+                    if (disk_ioctl((BYTE)p1, GET_SECTOR_COUNT, &dw) == RES_OK)
+                        printf("Number of sectors = %u\n", dw);
+                    break;
+                case 's':
+                    if (!xatoi(&ptr, &p1)) break;
+                    if (disk_ioctl((BYTE)p1, GET_SECTOR_SIZE, &w) == RES_OK)
+                        printf("Sector size = %u\n", w);
+                    if (disk_ioctl((BYTE)p1, GET_SECTOR_COUNT, &dw) == RES_OK)
+                        printf("Number of sectors = %u\n", dw);
                 }
-                res = disk_read((BYTE)p1, Buff, p2, 1);
-                if (res) { printf("rc=%d\n", (WORD)res); break; }
-                printf("Drive:%u Sector:%lu\n", p1, p2);
-                if (disk_ioctl((BYTE)p1, GET_SECTOR_SIZE, &w) != RES_OK) break;
-                sect = p2 + 1; drv = p1; 
-                for (buf = Buff, ofs = 0; ofs < w; buf += 16, ofs += 16)
-                    put_dump(buf, ofs, 16);
-                break;
 
-                
-            case 'i' :  /* di <pd#> - 磁盘初始化 */
-                if (!xatoi(&ptr, &p1)) break;
-                res = disk_initialize((BYTE)p1);
-                printf("rc=%d\n", res);
-                if (disk_ioctl((BYTE)p1, GET_SECTOR_SIZE, &w) == RES_OK)
-                    printf("Sector size = %u\n", w);
-                if (disk_ioctl((BYTE)p1, GET_SECTOR_COUNT, &dw) == RES_OK)
-                    printf("Number of sectors = %u\n", dw);
-                break;
-            case 's':
-                if (!xatoi(&ptr, &p1)) break;
-                if (disk_ioctl((BYTE)p1, GET_SECTOR_SIZE, &w) == RES_OK)
-                    printf("Sector size = %u\n", w);
-                if (disk_ioctl((BYTE)p1, GET_SECTOR_COUNT, &dw) == RES_OK)
-                    printf("Number of sectors = %u\n", dw);
-            }
+            case 'f' :  /* FatFs test command */
+                switch (*ptr++) {   /* Branch by secondary command character */
+                case 'i':/*挂载fi <ld#> [<mount>]*/
+                    if (!xatoi(&ptr, &p1) || (UINT)p1 > 9) break;
+                    if (!xatoi(&ptr, &p2)) p2 = 0;
+                    sprintf(ptr, "%d:", p1);
+                    res=f_mount(&FatFs[p1], ptr, (BYTE)p2);
+                    printf("%d\n",res );
+                    break;
+                case 'l':
+                    f_opendir(&dir,"/");
+                    while(1){
+                        f_readdir(&dir,&fno);
+                        if (dir.sect){
+                            if (fno.fattrib==16)
+                                printf("%s\\ \n", fno.fname);
+                            else
+                                printf("%s \n", fno.fname);
+                        }
+                        else
+                            break;
+                    }
+                    break;
+                case 'c':
 
-        case 'f' :  /* FatFs test command */
-            switch (*ptr++) {   /* Branch by secondary command character */
-            case  'i':/*挂载fi <ld#> [<mount>]*/
-                if (!xatoi(&ptr, &p1) || (UINT)p1 > 9) break;
-                if (!xatoi(&ptr, &p2)) p2 = 0;
-                sprintf(ptr, "%d:", p1);
-                res=f_mount(&FatFs[p1], ptr, (BYTE)p2);
-                printf("%d\n",res );
-                break;
-            case 's':/*状态fs [<path>]*/
-                while (*ptr == ' ') ptr++;
-                ptr2 = ptr;
-#if _FS_READONLY
-                res = f_opendir(&dir, ptr);
-                if (res) {
-                    fs = dir.fs;
-                    f_closedir(&dir);
+                    f_open(&f1,ptr,FA_CREATE_NEW);
+                    f_close(&f1);
+                    break;
+                case 'r':
+                    f_unlink(ptr);
+                    break;
                 }
-#else
-                res = f_getfree(ptr, (DWORD*)&p1, &fs);
-#endif
-                if (res) { put_rc(res); break; }
-                printf("FAT type = FAT%u\nNumber of FATs = %u\n", ft[fs->fs_type & 3], fs->n_fats);
-                printf("Cluster size = %u sectors, %lu bytes\n",
-#if _MAX_SS != 512
-                    fs->csize, (DWORD)fs->csize * fs->ssize);
-#else
-                    fs->csize, (DWORD)fs->csize * 512);
-#endif
-                if (fs->fs_type != FS_FAT32) printf("Root DIR entries = %u\n", fs->n_rootdir);
-                printf("Sectors/FAT = %lu\nNumber of clusters = %lu\nVolume start sector = %lu\nFAT start sector = %lu\nRoot DIR start %s = %lu\nData start sector = %lu\n\n",
-                    fs->fsize, fs->n_fatent - 2, fs->volbase, fs->fatbase, fs->fs_type == FS_FAT32 ? _T("cluster") : _T("sector"), fs->dirbase, fs->database);
-#if _USE_LABEL
-                res = f_getlabel(ptr2, pool, &dw);
-                if (res) { put_rc(res); break; }
-                _tprintf(pool[0] ? _T("Volume name is %s\n") : _T("No volume label\n"), pool);
-                _tprintf(_T("Volume S/N is %04X-%04X\n"), dw >> 16, dw & 0xFFFF);
-#endif
-                printf("...");
-                AccSize = AccFiles = AccDirs = 0;
-                res = scan_files(ptr);
-                if (res) { put_rc(res); break; }
-                p2 = (fs->n_fatent - 2) * fs->csize;
-                p3 = p1 * fs->csize;
-#if _MAX_SS != 512
-                p2 *= fs->ssize / 512;
-                p3 *= fs->ssize / 512;
-#endif
-                p2 /= 2;
-                p3 /= 2;
-                printf("\r%u files, %I64u bytes.\n%u folders.\n%lu KiB total disk space.\n",
-                        AccFiles, AccSize, AccDirs, p2);
-#if !FS_READONLY
-                printf("%lu KiB available.\n", p3);
-#endif
-                break;
-
+            case 'l':
+                switch (*ptr++){
+                case 'l':
+                    f_opendir(&dir,"/");
+                    while(1){
+                        f_readdir(&dir,&fno);
+                        if (dir.sect){
+                            if (fno.fattrib==16)
+                                printf("%s\\ \n", fno.fname);
+                            else
+                                printf("%s \n", fno.fname);
+                        }
+                        else
+                            break;
+                    }
+                    break;
+                case 'f':
+                    
+                }
 
 
         }
-
     }
-}
     /* 为逻辑驱动器注册工作区 */
     printf("%d\n",f_mount(&fs[0],"",1));
     printf("%d\n",f_mkfs("",0,0) );

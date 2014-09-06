@@ -147,7 +147,7 @@
 #define	ABORT(fs, res)		{ fp->err = (BYTE)(res); LEAVE_FF(fs, res); }
 
 
-/* Definitions of sector size */
+/* 扇区大小默认512 */
 #if (_MAX_SS < _MIN_SS) || (_MAX_SS != 512 && _MAX_SS != 1024 && _MAX_SS != 2048 && _MAX_SS != 4096) || (_MIN_SS != 512 && _MIN_SS != 1024 && _MIN_SS != 2048 && _MIN_SS != 4096)
 #error Wrong sector size configuration.
 #endif
@@ -415,9 +415,9 @@ typedef struct {
 /* FatFs refers the members in the FAT structures as byte array instead of
 / structure member because the structure is not binary compatible between
 / different platforms */
-/*以下为文件系统结构定义*/
-#define BS_jmpBoot			0		/* Jump instruction (3) */
-#define BS_OEMName			3		/* OEM name (8) */
+/*以下为文件系统结构定义默认不使用*/
+#define BS_jmpBoot			0		/* Jump instruction (3) 启动跳转*/
+#define BS_OEMName			3		/* OEM name (8) 制造商*/
 #define BPB_BytsPerSec		11		/* Sector size [byte] (2) */
 #define BPB_SecPerClus		13		/* Cluster size [sector] (1) */
 #define BPB_RsvdSecCnt		14		/* Size of reserved area [sector] (2) */
@@ -453,9 +453,9 @@ typedef struct {
 #define MBR_Table			446		/* MBR: Partition table offset (2) */
 #define	SZ_PTE				16		/* MBR: Size of a partition table entry */
 #define BS_55AA				510		/* Signature word (2) */
-
-#define	DIR_Name			0		/* Short file name (11) */
-#define	DIR_Attr			11		/* Attribute (1) */
+/*目录数据偏移量*/
+#define	DIR_Name			0		/* Short file name (11) 文件名*/
+#define	DIR_Attr			11		/* Attribute (1) 文件属性*/
 #define	DIR_NTres			12		/* NT flag (1) */
 #define DIR_CrtTimeTenth	13		/* Created time sub-second (1) */
 #define	DIR_CrtTime			14		/* Created time (2) */
@@ -473,8 +473,8 @@ typedef struct {
 #define	LDIR_FstClusLO		26		/* Filled by zero (0) */
 #define	SZ_DIR				32		/* 目录记录大小 */
 #define	LLE					0x40	/* Last long entry flag in LDIR_Ord */
-#define	DDE					0xE5	/* Deleted directory entry mark in DIR_Name[0] */
-#define	NDDE				0x05	/* Replacement of the character collides with DDE */
+#define	DDE					0xE5	/* Deleted directory entry mark in DIR_Name[0] 删除标记*/
+#define	NDDE				0x05	/* Replacement of the character collides with DDE 取消删除标记*/
 
 
 
@@ -1733,7 +1733,7 @@ FRESULT dir_remove (	/* FR_OK: Successful, FR_DISK_ERR: A disk error */
 
 
 /*-----------------------------------------------------------------------*/
-/* Get file information from directory entry     获取文件信息                  */
+/* Get file information from directory entry     从目录获取文件信息                  */
 /*-----------------------------------------------------------------------*/
 #if _FS_MINIMIZE <= 1 || _FS_RPATH >= 2
 static
@@ -1747,15 +1747,15 @@ void get_fileinfo (		/* No return code */
 
 
 	p = fno->fname;
-	if (dp->sect) {		/* Get SFN */
-		BYTE *dir = dp->dir;
+	if (dp->sect) {		/* Get SFN 获取名称*/
+		BYTE *dir = dp->dir;/*目录索引目标名称*/
 
 		i = 0;
 		while (i < 11) {		/* Copy name body and extension */
 			c = (TCHAR)dir[i++];
 			if (c == ' ') continue;			/* Skip padding spaces */
 			if (c == NDDE) c = (TCHAR)DDE;	/* Restore replaced DDE character */
-			if (i == 9) *p++ = '.';			/* Insert a . if extension is exist */
+			if (i == 9) *p++ = '.';			/* Insert a . if extension is exist 扩展名*/
 #if _USE_LFN
 			if (IsUpper(c) && (dir[DIR_NTres] & (i >= 9 ? NS_EXT : NS_BODY)))
 				c += 0x20;			/* To lower */
