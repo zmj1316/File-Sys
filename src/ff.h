@@ -96,7 +96,7 @@ typedef struct {
 #if _FS_RPATH
 	DWORD	cdir;			/* Current directory start cluster (0:root) 当前目录（默认关闭）*/
 #endif
-	DWORD	n_fatent;		/* Number of FAT entries, = number of clusters + 2 */
+	DWORD	n_fatent;		/* Number of FAT entries, = number of clusters + 2 fat记录类型数（簇数+空闲+损坏）*/
 	DWORD	fsize;			/* Sectors per FAT 记录的大小*/
 	DWORD	volbase;		/* Volume start sector */
 	DWORD	fatbase;		/* FAT start sector 记录开始*/
@@ -146,8 +146,8 @@ typedef struct {
 	DWORD	sclust;			/* Table start cluster (0:Root dir) 起始簇*/
 	DWORD	clust;			/* Current cluster 当前簇*/
 	DWORD	sect;			/* Current sector */
-	BYTE*	dir;			/* Pointer to the current SFN entry in the win[] 缓存中的文件名指针*/
-	BYTE*	fn;				/* Pointer to the SFN (in/out) {file[8],ext[3],status[1]} */
+	BYTE*	dir;			/* Pointer to the current SFN entry in the win[] 缓存中的目录指针*/
+	BYTE*	fn;				/* Pointer to the SFN (in/out) {file[8],ext[3],status[1]} 缓存中的文件名指针*/
 #if _FS_LOCK
 	UINT	lockid;			/* File lock ID (index of file semaphore table Files[]) */
 #endif
@@ -322,7 +322,7 @@ int ff_del_syncobj (_SYNC_t sobj);				/* Delete a sync object */
 
 /*--------------------------------*/
 /* Multi-byte word access macros  */
-/*多字节转换*/
+/*多字节转换小头*/
 #if _WORD_ACCESS == 1	/* Enable word access to the FAT structure */
 #define	LD_WORD(ptr)		(WORD)(*(WORD*)(BYTE*)(ptr))
 #define	LD_DWORD(ptr)		(DWORD)(*(DWORD*)(BYTE*)(ptr))

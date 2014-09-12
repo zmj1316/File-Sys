@@ -132,17 +132,10 @@
 #endif
 
 
-/* Reentrancy related */
-#if _FS_REENTRANT
-#if _USE_LFN == 1
-#error Static LFN work area cannot be used at thread-safe configuration.
-#endif
-#define	ENTER_FF(fs)		{ if (!lock_fs(fs)) return FR_TIMEOUT; }
-#define	LEAVE_FF(fs, res)	{ unlock_fs(fs, res); return res; }
-#else
+
 #define	ENTER_FF(fs)
 #define LEAVE_FF(fs, res)	return res
-#endif
+
 
 #define	ABORT(fs, res)		{ fp->err = (BYTE)(res); LEAVE_FF(fs, res); }
 
@@ -152,222 +145,18 @@
 #error Wrong sector size configuration.
 #endif
 #if _MAX_SS == _MIN_SS
-#define	SS(fs)	((UINT)_MAX_SS)	/* Fixed sector size */
+#define	SS(fs)	((UINT)_MAX_SS)	/* 固定大小 */
 #else
-#define	SS(fs)	((fs)->ssize)	/* Variable sector size */
-#endif
-
-
-/* File access control feature */
-#if _FS_LOCK
-#if _FS_READONLY
-#error _FS_LOCK must be 0 at read-only cfg.
-#endif
-typedef struct {
-	FATFS *fs;		/* Object ID 1, volume (NULL:blank entry) */
-	DWORD clu;		/* Object ID 2, directory (0:root) */
-	WORD idx;		/* Object ID 3, directory index */
-	WORD ctr;		/* Object open counter, 0:none, 0x01..0xFF:read mode open count, 0x100:write mode */
-} FILESEM;
+#define	SS(fs)	((fs)->ssize)	/* 可变大小 */
 #endif
 
 
 
-/* DBCS code ranges and SBCS extend character conversion table */
 
-#if _CODE_PAGE == 932	/* Japanese Shift-JIS */
-#define _DF1S	0x81	/* DBC 1st byte range 1 start */
-#define _DF1E	0x9F	/* DBC 1st byte range 1 end */
-#define _DF2S	0xE0	/* DBC 1st byte range 2 start */
-#define _DF2E	0xFC	/* DBC 1st byte range 2 end */
-#define _DS1S	0x40	/* DBC 2nd byte range 1 start */
-#define _DS1E	0x7E	/* DBC 2nd byte range 1 end */
-#define _DS2S	0x80	/* DBC 2nd byte range 2 start */
-#define _DS2E	0xFC	/* DBC 2nd byte range 2 end */
 
-#elif _CODE_PAGE == 936	/* Simplified Chinese GBK */
-#define _DF1S	0x81
-#define _DF1E	0xFE
-#define _DS1S	0x40
-#define _DS1E	0x7E
-#define _DS2S	0x80
-#define _DS2E	0xFE
 
-#elif _CODE_PAGE == 949	/* Korean */
-#define _DF1S	0x81
-#define _DF1E	0xFE
-#define _DS1S	0x41
-#define _DS1E	0x5A
-#define _DS2S	0x61
-#define _DS2E	0x7A
-#define _DS3S	0x81
-#define _DS3E	0xFE
-
-#elif _CODE_PAGE == 950	/* Traditional Chinese Big5 */
-#define _DF1S	0x81
-#define _DF1E	0xFE
-#define _DS1S	0x40
-#define _DS1E	0x7E
-#define _DS2S	0xA1
-#define _DS2E	0xFE
-
-#elif _CODE_PAGE == 437	/* U.S. (OEM) */
-#define _DF1S	0
-#define _EXCVT {0x80,0x9A,0x90,0x41,0x8E,0x41,0x8F,0x80,0x45,0x45,0x45,0x49,0x49,0x49,0x8E,0x8F,0x90,0x92,0x92,0x4F,0x99,0x4F,0x55,0x55,0x59,0x99,0x9A,0x9B,0x9C,0x9D,0x9E,0x9F, \
-				0x41,0x49,0x4F,0x55,0xA5,0xA5,0xA6,0xA7,0xA8,0xA9,0xAA,0xAB,0xAC,0x21,0xAE,0xAF,0xB0,0xB1,0xB2,0xB3,0xB4,0xB5,0xB6,0xB7,0xB8,0xB9,0xBA,0xBB,0xBC,0xBD,0xBE,0xBF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xD7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xDF, \
-				0xE0,0xE1,0xE2,0xE3,0xE4,0xE5,0xE6,0xE7,0xE8,0xE9,0xEA,0xEB,0xEC,0xED,0xEE,0xEF,0xF0,0xF1,0xF2,0xF3,0xF4,0xF5,0xF6,0xF7,0xF8,0xF9,0xFA,0xFB,0xFC,0xFD,0xFE,0xFF}
-
-#elif _CODE_PAGE == 720	/* Arabic (OEM) */
-#define _DF1S	0
-#define _EXCVT {0x80,0x81,0x45,0x41,0x84,0x41,0x86,0x43,0x45,0x45,0x45,0x49,0x49,0x8D,0x8E,0x8F,0x90,0x92,0x92,0x93,0x94,0x95,0x49,0x49,0x98,0x99,0x9A,0x9B,0x9C,0x9D,0x9E,0x9F, \
-				0xA0,0xA1,0xA2,0xA3,0xA4,0xA5,0xA6,0xA7,0xA8,0xA9,0xAA,0xAB,0xAC,0xAD,0xAE,0xAF,0xB0,0xB1,0xB2,0xB3,0xB4,0xB5,0xB6,0xB7,0xB8,0xB9,0xBA,0xBB,0xBC,0xBD,0xBE,0xBF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xD7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xDF, \
-				0xE0,0xE1,0xE2,0xE3,0xE4,0xE5,0xE6,0xE7,0xE8,0xE9,0xEA,0xEB,0xEC,0xED,0xEE,0xEF,0xF0,0xF1,0xF2,0xF3,0xF4,0xF5,0xF6,0xF7,0xF8,0xF9,0xFA,0xFB,0xFC,0xFD,0xFE,0xFF}
-
-#elif _CODE_PAGE == 737	/* Greek (OEM) */
-#define _DF1S	0
-#define _EXCVT {0x80,0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8A,0x8B,0x8C,0x8D,0x8E,0x8F,0x90,0x92,0x92,0x93,0x94,0x95,0x96,0x97,0x80,0x81,0x82,0x83,0x84,0x85,0x86,0x87, \
-				0x88,0x89,0x8A,0x8B,0x8C,0x8D,0x8E,0x8F,0x90,0x91,0xAA,0x92,0x93,0x94,0x95,0x96,0xB0,0xB1,0xB2,0xB3,0xB4,0xB5,0xB6,0xB7,0xB8,0xB9,0xBA,0xBB,0xBC,0xBD,0xBE,0xBF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xD7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xDF, \
-				0x97,0xEA,0xEB,0xEC,0xE4,0xED,0xEE,0xE7,0xE8,0xF1,0xEA,0xEB,0xEC,0xED,0xEE,0xEF,0xF0,0xF1,0xF2,0xF3,0xF4,0xF5,0xF6,0xF7,0xF8,0xF9,0xFA,0xFB,0xFC,0xFD,0xFE,0xFF}
-
-#elif _CODE_PAGE == 775	/* Baltic (OEM) */
-#define _DF1S	0
-#define _EXCVT {0x80,0x9A,0x91,0xA0,0x8E,0x95,0x8F,0x80,0xAD,0xED,0x8A,0x8A,0xA1,0x8D,0x8E,0x8F,0x90,0x92,0x92,0xE2,0x99,0x95,0x96,0x97,0x97,0x99,0x9A,0x9D,0x9C,0x9D,0x9E,0x9F, \
-				0xA0,0xA1,0xE0,0xA3,0xA3,0xA5,0xA6,0xA7,0xA8,0xA9,0xAA,0xAB,0xAC,0xAD,0xAE,0xAF,0xB0,0xB1,0xB2,0xB3,0xB4,0xB5,0xB6,0xB7,0xB8,0xB9,0xBA,0xBB,0xBC,0xBD,0xBE,0xBF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xB5,0xB6,0xB7,0xB8,0xBD,0xBE,0xC6,0xC7,0xA5,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xDF, \
-				0xE0,0xE1,0xE2,0xE3,0xE5,0xE5,0xE6,0xE3,0xE8,0xE8,0xEA,0xEA,0xEE,0xED,0xEE,0xEF,0xF0,0xF1,0xF2,0xF3,0xF4,0xF5,0xF6,0xF7,0xF8,0xF9,0xFA,0xFB,0xFC,0xFD,0xFE,0xFF}
-
-#elif _CODE_PAGE == 850	/* Multilingual Latin 1 (OEM) */
-#define _DF1S	0
-#define _EXCVT {0x80,0x9A,0x90,0xB6,0x8E,0xB7,0x8F,0x80,0xD2,0xD3,0xD4,0xD8,0xD7,0xDE,0x8E,0x8F,0x90,0x92,0x92,0xE2,0x99,0xE3,0xEA,0xEB,0x59,0x99,0x9A,0x9D,0x9C,0x9D,0x9E,0x9F, \
-				0xB5,0xD6,0xE0,0xE9,0xA5,0xA5,0xA6,0xA7,0xA8,0xA9,0xAA,0xAB,0xAC,0x21,0xAE,0xAF,0xB0,0xB1,0xB2,0xB3,0xB4,0xB5,0xB6,0xB7,0xB8,0xB9,0xBA,0xBB,0xBC,0xBD,0xBE,0xBF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC7,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xD7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xDF, \
-				0xE0,0xE1,0xE2,0xE3,0xE5,0xE5,0xE6,0xE7,0xE7,0xE9,0xEA,0xEB,0xED,0xED,0xEE,0xEF,0xF0,0xF1,0xF2,0xF3,0xF4,0xF5,0xF6,0xF7,0xF8,0xF9,0xFA,0xFB,0xFC,0xFD,0xFE,0xFF}
-
-#elif _CODE_PAGE == 852	/* Latin 2 (OEM) */
-#define _DF1S	0
-#define _EXCVT {0x80,0x9A,0x90,0xB6,0x8E,0xDE,0x8F,0x80,0x9D,0xD3,0x8A,0x8A,0xD7,0x8D,0x8E,0x8F,0x90,0x91,0x91,0xE2,0x99,0x95,0x95,0x97,0x97,0x99,0x9A,0x9B,0x9B,0x9D,0x9E,0x9F, \
-				0xB5,0xD6,0xE0,0xE9,0xA4,0xA4,0xA6,0xA6,0xA8,0xA8,0xAA,0x8D,0xAC,0xB8,0xAE,0xAF,0xB0,0xB1,0xB2,0xB3,0xB4,0xB5,0xB6,0xB7,0xB8,0xB9,0xBA,0xBB,0xBC,0xBD,0xBD,0xBF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC6,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD1,0xD1,0xD2,0xD3,0xD2,0xD5,0xD6,0xD7,0xB7,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xDF, \
-				0xE0,0xE1,0xE2,0xE3,0xE3,0xD5,0xE6,0xE6,0xE8,0xE9,0xE8,0xEB,0xED,0xED,0xDD,0xEF,0xF0,0xF1,0xF2,0xF3,0xF4,0xF5,0xF6,0xF7,0xF8,0xF9,0xFA,0xEB,0xFC,0xFC,0xFE,0xFF}
-
-#elif _CODE_PAGE == 855	/* Cyrillic (OEM) */
-#define _DF1S	0
-#define _EXCVT {0x81,0x81,0x83,0x83,0x85,0x85,0x87,0x87,0x89,0x89,0x8B,0x8B,0x8D,0x8D,0x8F,0x8F,0x91,0x91,0x93,0x93,0x95,0x95,0x97,0x97,0x99,0x99,0x9B,0x9B,0x9D,0x9D,0x9F,0x9F, \
-				0xA1,0xA1,0xA3,0xA3,0xA5,0xA5,0xA7,0xA7,0xA9,0xA9,0xAB,0xAB,0xAD,0xAD,0xAE,0xAF,0xB0,0xB1,0xB2,0xB3,0xB4,0xB6,0xB6,0xB8,0xB8,0xB9,0xBA,0xBB,0xBC,0xBE,0xBE,0xBF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC7,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD1,0xD1,0xD3,0xD3,0xD5,0xD5,0xD7,0xD7,0xDD,0xD9,0xDA,0xDB,0xDC,0xDD,0xE0,0xDF, \
-				0xE0,0xE2,0xE2,0xE4,0xE4,0xE6,0xE6,0xE8,0xE8,0xEA,0xEA,0xEC,0xEC,0xEE,0xEE,0xEF,0xF0,0xF2,0xF2,0xF4,0xF4,0xF6,0xF6,0xF8,0xF8,0xFA,0xFA,0xFC,0xFC,0xFD,0xFE,0xFF}
-
-#elif _CODE_PAGE == 857	/* Turkish (OEM) */
-#define _DF1S	0
-#define _EXCVT {0x80,0x9A,0x90,0xB6,0x8E,0xB7,0x8F,0x80,0xD2,0xD3,0xD4,0xD8,0xD7,0x98,0x8E,0x8F,0x90,0x92,0x92,0xE2,0x99,0xE3,0xEA,0xEB,0x98,0x99,0x9A,0x9D,0x9C,0x9D,0x9E,0x9E, \
-				0xB5,0xD6,0xE0,0xE9,0xA5,0xA5,0xA6,0xA6,0xA8,0xA9,0xAA,0xAB,0xAC,0x21,0xAE,0xAF,0xB0,0xB1,0xB2,0xB3,0xB4,0xB5,0xB6,0xB7,0xB8,0xB9,0xBA,0xBB,0xBC,0xBD,0xBE,0xBF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC7,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xD7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xDF, \
-				0xE0,0xE1,0xE2,0xE3,0xE5,0xE5,0xE6,0xE7,0xE8,0xE9,0xEA,0xEB,0xDE,0x59,0xEE,0xEF,0xF0,0xF1,0xF2,0xF3,0xF4,0xF5,0xF6,0xF7,0xF8,0xF9,0xFA,0xFB,0xFC,0xFD,0xFE,0xFF}
-
-#elif _CODE_PAGE == 858	/* Multilingual Latin 1 + Euro (OEM) */
-#define _DF1S	0
-#define _EXCVT {0x80,0x9A,0x90,0xB6,0x8E,0xB7,0x8F,0x80,0xD2,0xD3,0xD4,0xD8,0xD7,0xDE,0x8E,0x8F,0x90,0x92,0x92,0xE2,0x99,0xE3,0xEA,0xEB,0x59,0x99,0x9A,0x9D,0x9C,0x9D,0x9E,0x9F, \
-				0xB5,0xD6,0xE0,0xE9,0xA5,0xA5,0xA6,0xA7,0xA8,0xA9,0xAA,0xAB,0xAC,0x21,0xAE,0xAF,0xB0,0xB1,0xB2,0xB3,0xB4,0xB5,0xB6,0xB7,0xB8,0xB9,0xBA,0xBB,0xBC,0xBD,0xBE,0xBF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC7,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD1,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xD7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xDF, \
-				0xE0,0xE1,0xE2,0xE3,0xE5,0xE5,0xE6,0xE7,0xE7,0xE9,0xEA,0xEB,0xED,0xED,0xEE,0xEF,0xF0,0xF1,0xF2,0xF3,0xF4,0xF5,0xF6,0xF7,0xF8,0xF9,0xFA,0xFB,0xFC,0xFD,0xFE,0xFF}
-
-#elif _CODE_PAGE == 862	/* Hebrew (OEM) */
-#define _DF1S	0
-#define _EXCVT {0x80,0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8A,0x8B,0x8C,0x8D,0x8E,0x8F,0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x98,0x99,0x9A,0x9B,0x9C,0x9D,0x9E,0x9F, \
-				0x41,0x49,0x4F,0x55,0xA5,0xA5,0xA6,0xA7,0xA8,0xA9,0xAA,0xAB,0xAC,0x21,0xAE,0xAF,0xB0,0xB1,0xB2,0xB3,0xB4,0xB5,0xB6,0xB7,0xB8,0xB9,0xBA,0xBB,0xBC,0xBD,0xBE,0xBF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xD7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xDF, \
-				0xE0,0xE1,0xE2,0xE3,0xE4,0xE5,0xE6,0xE7,0xE8,0xE9,0xEA,0xEB,0xEC,0xED,0xEE,0xEF,0xF0,0xF1,0xF2,0xF3,0xF4,0xF5,0xF6,0xF7,0xF8,0xF9,0xFA,0xFB,0xFC,0xFD,0xFE,0xFF}
-
-#elif _CODE_PAGE == 866	/* Russian (OEM) */
-#define _DF1S	0
-#define _EXCVT {0x80,0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8A,0x8B,0x8C,0x8D,0x8E,0x8F,0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x98,0x99,0x9A,0x9B,0x9C,0x9D,0x9E,0x9F, \
-				0x80,0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8A,0x8B,0x8C,0x8D,0x8E,0x8F,0xB0,0xB1,0xB2,0xB3,0xB4,0xB5,0xB6,0xB7,0xB8,0xB9,0xBA,0xBB,0xBC,0xBD,0xBE,0xBF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xD7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xDF, \
-				0x90,0x91,0x92,0x93,0x9d,0x95,0x96,0x97,0x98,0x99,0x9A,0x9B,0x9C,0x9D,0x9E,0x9F,0xF0,0xF0,0xF2,0xF2,0xF4,0xF4,0xF6,0xF6,0xF8,0xF9,0xFA,0xFB,0xFC,0xFD,0xFE,0xFF}
-
-#elif _CODE_PAGE == 874	/* Thai (OEM, Windows) */
-#define _DF1S	0
-#define _EXCVT {0x80,0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8A,0x8B,0x8C,0x8D,0x8E,0x8F,0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x98,0x99,0x9A,0x9B,0x9C,0x9D,0x9E,0x9F, \
-				0xA0,0xA1,0xA2,0xA3,0xA4,0xA5,0xA6,0xA7,0xA8,0xA9,0xAA,0xAB,0xAC,0xAD,0xAE,0xAF,0xB0,0xB1,0xB2,0xB3,0xB4,0xB5,0xB6,0xB7,0xB8,0xB9,0xBA,0xBB,0xBC,0xBD,0xBE,0xBF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xD7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xDF, \
-				0xE0,0xE1,0xE2,0xE3,0xE4,0xE5,0xE6,0xE7,0xE8,0xE9,0xEA,0xEB,0xEC,0xED,0xEE,0xEF,0xF0,0xF1,0xF2,0xF3,0xF4,0xF5,0xF6,0xF7,0xF8,0xF9,0xFA,0xFB,0xFC,0xFD,0xFE,0xFF}
-
-#elif _CODE_PAGE == 1250 /* Central Europe (Windows) */
-#define _DF1S	0
-#define _EXCVT {0x80,0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8A,0x8B,0x8C,0x8D,0x8E,0x8F,0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x98,0x99,0x8A,0x9B,0x8C,0x8D,0x8E,0x8F, \
-				0xA0,0xA1,0xA2,0xA3,0xA4,0xA5,0xA6,0xA7,0xA8,0xA9,0xAA,0xAB,0xAC,0xAD,0xAE,0xAF,0xB0,0xB1,0xB2,0xA3,0xB4,0xB5,0xB6,0xB7,0xB8,0xA5,0xAA,0xBB,0xBC,0xBD,0xBC,0xAF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xD7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xDF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xF7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xFF}
-
-#elif _CODE_PAGE == 1251 /* Cyrillic (Windows) */
-#define _DF1S	0
-#define _EXCVT {0x80,0x81,0x82,0x82,0x84,0x85,0x86,0x87,0x88,0x89,0x8A,0x8B,0x8C,0x8D,0x8E,0x8F,0x80,0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x98,0x99,0x8A,0x9B,0x8C,0x8D,0x8E,0x8F, \
-				0xA0,0xA2,0xA2,0xA3,0xA4,0xA5,0xA6,0xA7,0xA8,0xA9,0xAA,0xAB,0xAC,0xAD,0xAE,0xAF,0xB0,0xB1,0xB2,0xB2,0xA5,0xB5,0xB6,0xB7,0xA8,0xB9,0xAA,0xBB,0xA3,0xBD,0xBD,0xAF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xD7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xDF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xD7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xDF}
-
-#elif _CODE_PAGE == 1252 /* Latin 1 (Windows) */
-#define _DF1S	0
-#define _EXCVT {0x80,0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8A,0x8B,0x8C,0x8D,0x8E,0x8F,0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x98,0x99,0xAd,0x9B,0x8C,0x9D,0xAE,0x9F, \
-				0xA0,0x21,0xA2,0xA3,0xA4,0xA5,0xA6,0xA7,0xA8,0xA9,0xAA,0xAB,0xAC,0xAD,0xAE,0xAF,0xB0,0xB1,0xB2,0xB3,0xB4,0xB5,0xB6,0xB7,0xB8,0xB9,0xBA,0xBB,0xBC,0xBD,0xBE,0xBF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xD7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xDF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xF7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0x9F}
-
-#elif _CODE_PAGE == 1253 /* Greek (Windows) */
-#define _DF1S	0
-#define _EXCVT {0x80,0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8A,0x8B,0x8C,0x8D,0x8E,0x8F,0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x98,0x99,0x9A,0x9B,0x9C,0x9D,0x9E,0x9F, \
-				0xA0,0xA1,0xA2,0xA3,0xA4,0xA5,0xA6,0xA7,0xA8,0xA9,0xAA,0xAB,0xAC,0xAD,0xAE,0xAF,0xB0,0xB1,0xB2,0xB3,0xB4,0xB5,0xB6,0xB7,0xB8,0xB9,0xBA,0xBB,0xBC,0xBD,0xBE,0xBF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xD7,0xD8,0xD9,0xDA,0xDB,0xA2,0xB8,0xB9,0xBA, \
-				0xE0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xF2,0xD3,0xD4,0xD5,0xD6,0xD7,0xD8,0xD9,0xDA,0xFB,0xBC,0xFD,0xBF,0xFF}
-
-#elif _CODE_PAGE == 1254 /* Turkish (Windows) */
-#define _DF1S	0
-#define _EXCVT {0x80,0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8A,0x8B,0x8C,0x8D,0x8E,0x8F,0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x98,0x99,0x8A,0x9B,0x8C,0x9D,0x9E,0x9F, \
-				0xA0,0x21,0xA2,0xA3,0xA4,0xA5,0xA6,0xA7,0xA8,0xA9,0xAA,0xAB,0xAC,0xAD,0xAE,0xAF,0xB0,0xB1,0xB2,0xB3,0xB4,0xB5,0xB6,0xB7,0xB8,0xB9,0xBA,0xBB,0xBC,0xBD,0xBE,0xBF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xD7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xDF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xF7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0x9F}
-
-#elif _CODE_PAGE == 1255 /* Hebrew (Windows) */
-#define _DF1S	0
-#define _EXCVT {0x80,0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8A,0x8B,0x8C,0x8D,0x8E,0x8F,0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x98,0x99,0x9A,0x9B,0x9C,0x9D,0x9E,0x9F, \
-				0xA0,0x21,0xA2,0xA3,0xA4,0xA5,0xA6,0xA7,0xA8,0xA9,0xAA,0xAB,0xAC,0xAD,0xAE,0xAF,0xB0,0xB1,0xB2,0xB3,0xB4,0xB5,0xB6,0xB7,0xB8,0xB9,0xBA,0xBB,0xBC,0xBD,0xBE,0xBF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xD7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xDF, \
-				0xE0,0xE1,0xE2,0xE3,0xE4,0xE5,0xE6,0xE7,0xE8,0xE9,0xEA,0xEB,0xEC,0xED,0xEE,0xEF,0xF0,0xF1,0xF2,0xF3,0xF4,0xF5,0xF6,0xF7,0xF8,0xF9,0xFA,0xFB,0xFC,0xFD,0xFE,0xFF}
-
-#elif _CODE_PAGE == 1256 /* Arabic (Windows) */
-#define _DF1S	0
-#define _EXCVT {0x80,0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8A,0x8B,0x8C,0x8D,0x8E,0x8F,0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x98,0x99,0x9A,0x9B,0x8C,0x9D,0x9E,0x9F, \
-				0xA0,0xA1,0xA2,0xA3,0xA4,0xA5,0xA6,0xA7,0xA8,0xA9,0xAA,0xAB,0xAC,0xAD,0xAE,0xAF,0xB0,0xB1,0xB2,0xB3,0xB4,0xB5,0xB6,0xB7,0xB8,0xB9,0xBA,0xBB,0xBC,0xBD,0xBE,0xBF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xD7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xDF, \
-				0x41,0xE1,0x41,0xE3,0xE4,0xE5,0xE6,0x43,0x45,0x45,0x45,0x45,0xEC,0xED,0x49,0x49,0xF0,0xF1,0xF2,0xF3,0x4F,0xF5,0xF6,0xF7,0xF8,0x55,0xFA,0x55,0x55,0xFD,0xFE,0xFF}
-
-#elif _CODE_PAGE == 1257 /* Baltic (Windows) */
-#define _DF1S	0
-#define _EXCVT {0x80,0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8A,0x8B,0x8C,0x8D,0x8E,0x8F,0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x98,0x99,0x9A,0x9B,0x9C,0x9D,0x9E,0x9F, \
-				0xA0,0xA1,0xA2,0xA3,0xA4,0xA5,0xA6,0xA7,0xA8,0xA9,0xAA,0xAB,0xAC,0xAD,0xAE,0xAF,0xB0,0xB1,0xB2,0xB3,0xB4,0xB5,0xB6,0xB7,0xA8,0xB9,0xAA,0xBB,0xBC,0xBD,0xBE,0xAF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xD7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xDF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xF7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xFF}
-
-#elif _CODE_PAGE == 1258 /* Vietnam (OEM, Windows) */
-#define _DF1S	0
-#define _EXCVT {0x80,0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8A,0x8B,0x8C,0x8D,0x8E,0x8F,0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x98,0x99,0x9A,0x9B,0xAC,0x9D,0x9E,0x9F, \
-				0xA0,0x21,0xA2,0xA3,0xA4,0xA5,0xA6,0xA7,0xA8,0xA9,0xAA,0xAB,0xAC,0xAD,0xAE,0xAF,0xB0,0xB1,0xB2,0xB3,0xB4,0xB5,0xB6,0xB7,0xB8,0xB9,0xBA,0xBB,0xBC,0xBD,0xBE,0xBF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xD7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xDF, \
-				0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xEC,0xCD,0xCE,0xCF,0xD0,0xD1,0xF2,0xD3,0xD4,0xD5,0xD6,0xF7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xFE,0x9F}
-
-#elif _CODE_PAGE == 1	/* ASCII (for only non-LFN cfg) */
-#if _USE_LFN
-#error Cannot use LFN feature without valid code page.
-#endif
 #define _DF1S	0
 
-#else
-#error Unknown code page
-
-#endif
 
 
 /* Character code support macros */
@@ -375,39 +164,23 @@ typedef struct {
 #define IsLower(c)	(((c)>='a')&&((c)<='z'))
 #define IsDigit(c)	(((c)>='0')&&((c)<='9'))
 
-#if _DF1S		/* Code page is DBCS */
 
-#ifdef _DF2S	/* Two 1st byte areas */
-#define IsDBCS1(c)	(((BYTE)(c) >= _DF1S && (BYTE)(c) <= _DF1E) || ((BYTE)(c) >= _DF2S && (BYTE)(c) <= _DF2E))
-#else			/* One 1st byte area */
-#define IsDBCS1(c)	((BYTE)(c) >= _DF1S && (BYTE)(c) <= _DF1E)
-#endif
-
-#ifdef _DS3S	/* Three 2nd byte areas */
-#define IsDBCS2(c)	(((BYTE)(c) >= _DS1S && (BYTE)(c) <= _DS1E) || ((BYTE)(c) >= _DS2S && (BYTE)(c) <= _DS2E) || ((BYTE)(c) >= _DS3S && (BYTE)(c) <= _DS3E))
-#else			/* Two 2nd byte areas */
-#define IsDBCS2(c)	(((BYTE)(c) >= _DS1S && (BYTE)(c) <= _DS1E) || ((BYTE)(c) >= _DS2S && (BYTE)(c) <= _DS2E))
-#endif
-
-#else			/* Code page is SBCS */
 
 #define IsDBCS1(c)	0
 #define IsDBCS2(c)	0
 
-#endif /* _DF1S */
 
-
-/* Name status flags */
-#define NS			11		/* Index of name status byte in fn[] */
+/* Name status flags文件名状态 */
+#define NS			11		/* 文件名大小 */
 #define NS_LOSS		0x01	/* Out of 8.3 format */
-#define NS_LFN		0x02	/* Force to create LFN entry */
+#define NS_LFN		0x02	/* Force to create LFN entry 使用长文件名*/
 #define NS_LAST		0x04	/* Last segment */
-#define NS_BODY		0x08	/* Lower case flag (body) */
-#define NS_EXT		0x10	/* Lower case flag (ext) */
+#define NS_BODY		0x08	/* Lower case flag (body) 文件名主体*/
+#define NS_EXT		0x10	/* Lower case flag (ext) 扩展名*/
 #define NS_DOT		0x20	/* Dot entry */
 
 
-/* FAT sub-type boundaries */
+/* FAT sub-type boundaries 默认FAT16 簇数量*/
 #define MIN_FAT16	4086U	/* Minimum number of clusters for FAT16 */
 #define	MIN_FAT32	65526U	/* Minimum number of clusters for FAT32 */
 
@@ -415,7 +188,8 @@ typedef struct {
 /* FatFs refers the members in the FAT structures as byte array instead of
 / structure member because the structure is not binary compatible between
 / different platforms */
-/*以下为文件系统结构定义默认不使用*/
+/*以下为文件系统结构偏移*/
+/*引导扇区不处理*/
 #define BS_jmpBoot			0		/* Jump instruction (3) 启动跳转*/
 #define BS_OEMName			3		/* OEM name (8) 制造商*/
 #define BPB_BytsPerSec		11		/* Sector size [byte] (2) */
@@ -446,10 +220,11 @@ typedef struct {
 #define BS_VolID32			67		/* Volume serial number (4) */
 #define BS_VolLab32			71		/* Volume label (8) */
 #define BS_FilSysType32		82		/* File system type (1) */
+/*文件系统信息*/
 #define	FSI_LeadSig			0		/* FSI: Leading signature (4) */
 #define	FSI_StrucSig		484		/* FSI: Structure signature (4) */
-#define	FSI_Free_Count		488		/* FSI: Number of free clusters (4) */
-#define	FSI_Nxt_Free		492		/* FSI: Last allocated cluster (4) */
+#define	FSI_Free_Count		488		/* FSI: Number of free clusters (4) 空闲簇数*/
+#define	FSI_Nxt_Free		492		/* FSI: Last allocated cluster (4) 最后分配簇*/
 #define MBR_Table			446		/* MBR: Partition table offset (2) */
 #define	SZ_PTE				16		/* MBR: Size of a partition table entry */
 #define BS_55AA				510		/* Signature word (2) */
@@ -466,13 +241,15 @@ typedef struct {
 #define	DIR_WrtDate			24		/* Modified date (2) */
 #define	DIR_FstClusLO		26		/* Lower 16-bit of first cluster (2) */
 #define	DIR_FileSize		28		/* File size (4) */
+/*长文件名不支持*/
 #define	LDIR_Ord			0		/* LFN entry order and LLE flag (1) */
 #define	LDIR_Attr			11		/* LFN attribute (1) */
 #define	LDIR_Type			12		/* LFN type (1) */
 #define	LDIR_Chksum			13		/* Sum of corresponding SFN entry */
 #define	LDIR_FstClusLO		26		/* Filled by zero (0) */
+
 #define	SZ_DIR				32		/* 目录记录大小 */
-#define	LLE					0x40	/* Last long entry flag in LDIR_Ord */
+#define	LLE					0x40	/* Last long entry flag in LDIR_Ord 用于长文件名*/
 #define	DDE					0xE5	/* Deleted directory entry mark in DIR_Name[0] 删除标记*/
 #define	NDDE				0x05	/* Replacement of the character collides with DDE 取消删除标记*/
 
@@ -486,7 +263,7 @@ typedef struct {
 /  guaranteed zero/null as initial value. If not, either the
 /  linker or start-up routine is out of ANSI-C standard.
 */
-
+/*当同时使用多个卷时分配多个结构*/
 #if _VOLUMES >= 1 || _VOLUMES <= 10
 static
 FATFS *FatFs[_VOLUMES];		/* Pointer to the file system objects (logical drives) */
@@ -495,44 +272,13 @@ FATFS *FatFs[_VOLUMES];		/* Pointer to the file system objects (logical drives) 
 #endif
 
 static
-WORD Fsid;					/* File system mount ID */
+WORD Fsid;					/* File system mount ID 挂载id*/
 
-#if _FS_RPATH && _VOLUMES >= 2
-static
-BYTE CurrVol;				/* Current drive */
-#endif
-
-#if _FS_LOCK
-static
-FILESEM	Files[_FS_LOCK];	/* Open object lock semaphores */
-#endif
 
 #if _USE_LFN == 0			/* No LFN feature */
 #define	DEF_NAMEBUF			BYTE sfn[12]
 #define INIT_BUF(dobj)		(dobj).fn = sfn
 #define	FREE_BUF()
-
-#elif _USE_LFN == 1			/* LFN feature with static working buffer */
-static
-WCHAR LfnBuf[_MAX_LFN+1];
-#define	DEF_NAMEBUF			BYTE sfn[12]
-#define INIT_BUF(dobj)		{ (dobj).fn = sfn; (dobj).lfn = LfnBuf; }
-#define	FREE_BUF()
-
-#elif _USE_LFN == 2 		/* LFN feature with dynamic working buffer on the stack */
-#define	DEF_NAMEBUF			BYTE sfn[12]; WCHAR lbuf[_MAX_LFN+1]
-#define INIT_BUF(dobj)		{ (dobj).fn = sfn; (dobj).lfn = lbuf; }
-#define	FREE_BUF()
-
-#elif _USE_LFN == 3 		/* LFN feature with dynamic working buffer on the heap */
-#define	DEF_NAMEBUF			BYTE sfn[12]; WCHAR *lfn
-#define INIT_BUF(dobj)		{ lfn = ff_memalloc((_MAX_LFN + 1) * 2); \
-							  if (!lfn) LEAVE_FF((dobj).fs, FR_NOT_ENOUGH_CORE); \
-							  (dobj).lfn = lfn;	(dobj).fn = sfn; }
-#define	FREE_BUF()			ff_memfree(lfn)
-
-#else
-#error Wrong LFN configuration.
 #endif
 
 
@@ -548,28 +294,21 @@ const BYTE ExCvt[] = _EXCVT;	/* Upper conversion table for extended characters *
 
 /*--------------------------------------------------------------------------
 
-   Module Private Functions
+   Module Private Functions私有函数
 
 ---------------------------------------------------------------------------*/
 
 
 /*-----------------------------------------------------------------------*/
-/* String functions                                                      */
+/* String functions             字符串操作默认不使用                                         */
 /*-----------------------------------------------------------------------*/
 
-/* Copy memory to memory */
+/* Copy memory to memory 内存复制*/
 static
 void mem_cpy (void* dst, const void* src, UINT cnt) {
 	BYTE *d = (BYTE*)dst;
 	const BYTE *s = (const BYTE*)src;
 
-#if _WORD_ACCESS == 1
-	while (cnt >= sizeof (int)) {
-		*(int*)d = *(int*)s;
-		d += sizeof (int); s += sizeof (int);
-		cnt -= sizeof (int);
-	}
-#endif
 	while (cnt--)
 		*d++ = *s++;
 }
@@ -603,154 +342,12 @@ int chk_chr (const char* str, int chr) {
 
 
 
-/*-----------------------------------------------------------------------*/
-/* Request/Release grant to access the volume                            */
-/*-----------------------------------------------------------------------*/
-#if _FS_REENTRANT
-static
-int lock_fs (
-	FATFS* fs		/* File system object */
-)
-{
-	return ff_req_grant(fs->sobj);
-}
-
-
-static
-void unlock_fs (
-	FATFS* fs,		/* File system object */
-	FRESULT res		/* Result code to be returned */
-)
-{
-	if (fs &&
-		res != FR_NOT_ENABLED &&
-		res != FR_INVALID_DRIVE &&
-		res != FR_INVALID_OBJECT &&
-		res != FR_TIMEOUT) {
-		ff_rel_grant(fs->sobj);
-	}
-}
-#endif
-
-
-
-
-/*-----------------------------------------------------------------------*/
-/* File lock control functions                                           */
-/*-----------------------------------------------------------------------*/
-#if _FS_LOCK
-
-static
-FRESULT chk_lock (	/* Check if the file can be accessed */
-	DIR* dp,		/* Directory object pointing the file to be checked */
-	int acc			/* Desired access type (0:Read, 1:Write, 2:Delete/Rename) */
-)
-{
-	UINT i, be;
-
-	/* Search file semaphore table */
-	for (i = be = 0; i < _FS_LOCK; i++) {
-		if (Files[i].fs) {	/* Existing entry */
-			if (Files[i].fs == dp->fs &&	 	/* Check if the object matched with an open object */
-				Files[i].clu == dp->sclust &&
-				Files[i].idx == dp->index) break;
-		} else {			/* Blank entry */
-			be = 1;
-		}
-	}
-	if (i == _FS_LOCK)	/* The object is not opened */
-		return (be || acc == 2) ? FR_OK : FR_TOO_MANY_OPEN_FILES;	/* Is there a blank entry for new object? */
-
-	/* The object has been opened. Reject any open against writing file and all write mode open */
-	return (acc || Files[i].ctr == 0x100) ? FR_LOCKED : FR_OK;
-}
-
-
-static
-int enq_lock (void)	/* Check if an entry is available for a new object */
-{
-	UINT i;
-
-	for (i = 0; i < _FS_LOCK && Files[i].fs; i++) ;
-	return (i == _FS_LOCK) ? 0 : 1;
-}
-
-
-static
-UINT inc_lock (	/* Increment object open counter and returns its index (0:Internal error) */
-	DIR* dp,	/* Directory object pointing the file to register or increment */
-	int acc		/* Desired access (0:Read, 1:Write, 2:Delete/Rename) */
-)
-{
-	UINT i;
-
-
-	for (i = 0; i < _FS_LOCK; i++) {	/* Find the object */
-		if (Files[i].fs == dp->fs &&
-			Files[i].clu == dp->sclust &&
-			Files[i].idx == dp->index) break;
-	}
-
-	if (i == _FS_LOCK) {				/* Not opened. Register it as new. */
-		for (i = 0; i < _FS_LOCK && Files[i].fs; i++) ;
-		if (i == _FS_LOCK) return 0;	/* No free entry to register (int err) */
-		Files[i].fs = dp->fs;
-		Files[i].clu = dp->sclust;
-		Files[i].idx = dp->index;
-		Files[i].ctr = 0;
-	}
-
-	if (acc && Files[i].ctr) return 0;	/* Access violation (int err) */
-
-	Files[i].ctr = acc ? 0x100 : Files[i].ctr + 1;	/* Set semaphore value */
-
-	return i + 1;
-}
-
-
-static
-FRESULT dec_lock (	/* Decrement object open counter */
-	UINT i			/* Semaphore index (1..) */
-)
-{
-	WORD n;
-	FRESULT res;
-
-
-	if (--i < _FS_LOCK) {	/* Shift index number origin from 0 */
-		n = Files[i].ctr;
-		if (n == 0x100) n = 0;		/* If write mode open, delete the entry */
-		if (n) n--;					/* Decrement read mode open count */
-		Files[i].ctr = n;
-		if (!n) Files[i].fs = 0;	/* Delete the entry if open count gets zero */
-		res = FR_OK;
-	} else {
-		res = FR_INT_ERR;			/* Invalid index nunber */
-	}
-	return res;
-}
-
-
-static
-void clear_lock (	/* Clear lock entries of the volume */
-	FATFS *fs
-)
-{
-	UINT i;
-
-	for (i = 0; i < _FS_LOCK; i++) {
-		if (Files[i].fs == fs) Files[i].fs = 0;
-	}
-}
-#endif
-
-
 
 
 /*-----------------------------------------------------------------------*/
 /* Move/Flush disk access window in the file system object               */
 /*-----------------------------------------------------------------------*/
-/*确认缓存写入完成*/
+/*确认缓存写入完成（同步读写窗口）*/
 #if !_FS_READONLY
 static
 FRESULT sync_window (
@@ -761,13 +358,13 @@ FRESULT sync_window (
 	UINT nf;
 
 
-	if (fs->wflag) {	/* Write back the sector if it is dirty */
-		wsect = fs->winsect;	/* Current sector number */
+	if (fs->wflag) {	/* Write back the sector if it is dirty 检查是否缓存*/
+		wsect = fs->winsect;	/* Current sector number 当前缓存的扇区地址*/
 		if (disk_write(fs->drv, fs->win, wsect, 1))
 			return FR_DISK_ERR;
 		fs->wflag = 0;
 		if (wsect - fs->fatbase < fs->fsize) {		/* Is it in the FAT area? */
-			for (nf = fs->n_fats; nf >= 2; nf--) {	/* Reflect the change to all FAT copies */
+			for (nf = fs->n_fats; nf >= 2; nf--) {	/* Reflect the change to all FAT copies 写入到其他fat*/
 				wsect += fs->fsize;
 				disk_write(fs->drv, fs->win, wsect, 1);
 			}
@@ -781,10 +378,10 @@ FRESULT sync_window (
 static
 FRESULT move_window (
 	FATFS* fs,		/* File system object */
-	DWORD sector	/* Sector number to make appearance in the fs->win[] */
+	DWORD sector	/* Sector number to make appearance in the fs->win[] 缓存扇区编号*/
 )
 {
-	if (sector != fs->winsect) {	/* Changed current window */
+	if (sector != fs->winsect) {	/* Changed current window 改变当前读写窗口*/
 #if !_FS_READONLY
 		if (sync_window(fs) != FR_OK)
 			return FR_DISK_ERR;
@@ -801,7 +398,7 @@ FRESULT move_window (
 
 
 /*-----------------------------------------------------------------------*/
-/* Synchronize file system and strage device                             */
+/* Synchronize file system and strage device  同步文件信息                           */
 /*-----------------------------------------------------------------------*/
 #if !_FS_READONLY
 static
@@ -862,7 +459,7 @@ DWORD clust2sect (	/* !=0: Sector number, 0: Failed - invalid cluster# */
 /* FAT access - Read value of a FAT entry                                */
 /*-----------------------------------------------------------------------*/
 
-/*读取fat中入口并返回*/
+/*读取fat中入口并返回默认为fat16*/
 DWORD get_fat (	/* 0xFFFFFFFF:Disk error, 1:Internal error, Else:Cluster status */
 	FATFS* fs,	/* File system object */
 	DWORD clst	/* Cluster# to get the link information */
@@ -885,7 +482,7 @@ DWORD get_fat (	/* 0xFFFFFFFF:Disk error, 1:Internal error, Else:Cluster status 
 		return clst & 1 ? wc >> 4 : (wc & 0xFFF);
 
 	case FS_FAT16 :
-		if (move_window(fs, fs->fatbase + (clst / (SS(fs) / 2)))) break;
+		if (move_window(fs, fs->fatbase + (clst / (SS(fs) / 2)))) break;/*16位的fat所以除2*/
 		p = &fs->win[clst * 2 % SS(fs)];
 		return LD_WORD(p);
 
@@ -944,7 +541,7 @@ FRESULT put_fat (
 			res = move_window(fs, fs->fatbase + (clst / (SS(fs) / 2)));
 			if (res != FR_OK) break;
 			p = &fs->win[clst * 2 % SS(fs)];
-			ST_WORD(p, (WORD)val);
+			ST_WORD(p, (WORD)val);/*16位小头存储*/
 			break;
 
 		case FS_FAT32 :
@@ -981,36 +578,25 @@ FRESULT remove_chain (
 {
 	FRESULT res;
 	DWORD nxt;
-#if _USE_ERASE
-	DWORD scl = clst, ecl = clst, rt[2];
-#endif
+
 
 	if (clst < 2 || clst >= fs->n_fatent) {	/* Check range */
 		res = FR_INT_ERR;
 
 	} else {
 		res = FR_OK;
-		while (clst < fs->n_fatent) {			/* 判断是否结束*/
+		while (clst < fs->n_fatent) {			/* 判断是否超出范围*/
 			nxt = get_fat(fs, clst);			/* Get cluster status */
-			if (nxt == 0) break;				/* Empty cluster? */
-			if (nxt == 1) { res = FR_INT_ERR; break; }	/* Internal error? */
+			if (nxt == 0) break;				/* Empty cluster? 簇为空*/
+			if (nxt == 1) { res = FR_INT_ERR; break; }	/* Internal error? 坏*/
 			if (nxt == 0xFFFFFFFF) { res = FR_DISK_ERR; break; }	/* Disk error? */
 			res = put_fat(fs, clst, 0);			/* 标记当前簇为空 */
 			if (res != FR_OK) break;
-			if (fs->free_clust != 0xFFFFFFFF) {	/* 更新文件系统 */
+			if (fs->free_clust != 0xFFFFFFFF) {	/* 更新文件系统 增加空扇区计数*/
 				fs->free_clust++;
-				fs->fsi_flag |= 1;
+				fs->fsi_flag |= 1;/*标记等待写入*/
 			}
-#if _USE_ERASE
-			if (ecl + 1 == nxt) {	/* Is next cluster contiguous? */
-				ecl = nxt;
-			} else {				/* End of contiguous clusters */ 
-				rt[0] = clust2sect(fs, scl);					/* Start sector */
-				rt[1] = clust2sect(fs, ecl) + fs->csize - 1;	/* End sector */
-				disk_ioctl(fs->drv, CTRL_ERASE_SECTOR, rt);		/* Erase the block */
-				scl = ecl = nxt;
-			}
-#endif
+
 			clst = nxt;	/* Next cluster */
 		}
 	}
@@ -1037,15 +623,15 @@ DWORD create_chain (	/* 0:No free cluster, 1:Internal error, 0xFFFFFFFF:Disk err
 	FRESULT res;
 
 
-	if (clst == 0) {		/* 创建 */
+	if (clst == 0) {		/* 创建新链 */
 		scl = fs->last_clust;			/* 从最前的从未分配空簇开始 */
-		if (!scl || scl >= fs->n_fatent) scl = 1;
+		if (!scl || scl >= fs->n_fatent) scl = 1;/*所有簇都已经分配过*/
 	}
 	else {					/* 连接 */
-		cs = get_fat(fs, clst);			/* Check the cluster status */
+		cs = get_fat(fs, clst);			/* Check the cluster status *检查开始簇是否空/
 		if (cs < 2) return 1;			/* Invalid value */
 		if (cs == 0xFFFFFFFF) return cs;	/* A disk error occurred */
-		if (cs < fs->n_fatent) return cs;	/* It is already followed by next cluster */
+		if (cs < fs->n_fatent) return cs;	/* It is already followed by next cluster 已经占用返回下一个*/
 		scl = clst;
 	}
 
@@ -1058,7 +644,7 @@ DWORD create_chain (	/* 0:No free cluster, 1:Internal error, 0xFFFFFFFF:Disk err
 			if (ncl > scl) return 0;	/* No free cluster */
 		}
 		cs = get_fat(fs, ncl);			/* Get the cluster status */
-		if (cs == 0) break;				/* Found a free cluster */
+		if (cs == 0) break;				/* Found a free cluster 找到空簇*/
 		if (cs == 0xFFFFFFFF || cs == 1)/* An error occurred */
 			return cs;
 		if (ncl == scl) return 0;		/* No free cluster */
@@ -1086,38 +672,9 @@ DWORD create_chain (	/* 0:No free cluster, 1:Internal error, 0xFFFFFFFF:Disk err
 
 
 /*-----------------------------------------------------------------------*/
-/* FAT handling - Convert offset into cluster with link map table        */
-/*-----------------------------------------------------------------------*/
-
-#if _USE_FASTSEEK
-static
-DWORD clmt_clust (	/* <2:Error, >=2:Cluster number */
-	FIL* fp,		/* Pointer to the file object */
-	DWORD ofs		/* File offset to be converted to cluster# */
-)
-{
-	DWORD cl, ncl, *tbl;
-
-
-	tbl = fp->cltbl + 1;	/* Top of CLMT */
-	cl = ofs / SS(fp->fs) / fp->fs->csize;	/* Cluster order from top of the file */
-	for (;;) {
-		ncl = *tbl++;			/* Number of cluters in the fragment */
-		if (!ncl) return 0;		/* End of table? (error) */
-		if (cl < ncl) break;	/* In this fragment? */
-		cl -= ncl; tbl++;		/* Next fragment */
-	}
-	return cl + *tbl;	/* Return the cluster number */
-}
-#endif	/* _USE_FASTSEEK */
-
-
-
-
-/*-----------------------------------------------------------------------*/
 /* Directory handling - Set directory index                              */
 /*-----------------------------------------------------------------------*/
-/*根据目录索引读取目录*/
+/*设定目录索引读取目录*/
 static
 FRESULT dir_sdi (
 	DIR* dp,		/* Pointer to directory object */
@@ -1129,20 +686,20 @@ FRESULT dir_sdi (
 
 
 	dp->index = (WORD)idx;	/* Current index */
-	clst = dp->sclust;		/* Table start cluster (0:root) */
+	clst = dp->sclust;		/* Table start cluster (0:root) 目录起始簇*/
 	if (clst == 1 || clst >= dp->fs->n_fatent)	/* Check start cluster range */
 		return FR_INT_ERR;
 	if (!clst && dp->fs->fs_type == FS_FAT32)	/* Replace cluster# 0 with root cluster# if in FAT32 */
 		clst = dp->fs->dirbase;
 
 	if (clst == 0) {	/* 根目录Static table (root-directory in FAT12/16) */
-		if (idx >= dp->fs->n_rootdir)	/* Is index out of range? */
+		if (idx >= dp->fs->n_rootdir)	/* Is index out of range? 超出根目录限制*/
 			return FR_INT_ERR;
 		sect = dp->fs->dirbase;
 	}
 	else {				/* 子目录Dynamic table (root-directory in FAT32 or sub-directory) */
-		ic = SS(dp->fs) / SZ_DIR * dp->fs->csize;	/* Entries per cluster *//*一个簇包含的入口数*/
-		while (idx >= ic) {	/* Follow cluster chain */
+		ic = SS(dp->fs) / SZ_DIR * dp->fs->csize;	/* Entries per cluster *//*一个簇包含的目录记录数*/
+		while (idx >= ic) {	/* Follow cluster chain 下一个目录扇区*/
 			clst = get_fat(dp->fs, clst);				/* Get next cluster */
 			if (clst == 0xFFFFFFFF) return FR_DISK_ERR;	/* Disk error */
 			if (clst < 2 || clst >= dp->fs->n_fatent)	/* Reached to end of table or internal error */
@@ -1153,7 +710,7 @@ FRESULT dir_sdi (
 	}
 	dp->clust = clst;	/* Current cluster# */
 	if (!sect) return FR_INT_ERR;
-	dp->sect = sect + idx / (SS(dp->fs) / SZ_DIR);					/* Sector# of the directory entry 当前索引扇区*/
+	dp->sect = sect + idx / (SS(dp->fs) / SZ_DIR);					/* Sector# of the directory entry 当前索引所在的目录扇区*/
 	dp->dir = dp->fs->win + (idx % (SS(dp->fs) / SZ_DIR)) * SZ_DIR;	/* Ptr to the entry in the sector 缓存中的文件名位置*/
 
 	return FR_OK;
@@ -1169,7 +726,7 @@ FRESULT dir_sdi (
 static
 FRESULT dir_next (	/* FR_OK:Succeeded, FR_NO_FILE:End of table, FR_DENIED:Could not stretch */
 	DIR* dp,		/* Pointer to the directory object */
-	int stretch		/* 0: Do not stretch table, 1: Stretch table if needed 是否延伸目录表*/
+	int stretch		/* 0: Do not stretch table, 1: Stretch table if needed 是否延伸表*/
 )
 {
 	DWORD clst;
@@ -1184,34 +741,34 @@ FRESULT dir_next (	/* FR_OK:Succeeded, FR_NO_FILE:End of table, FR_DENIED:Could 
 		dp->sect++;					/* Next sector */
 
 		if (!dp->clust) {		/* Static table 根目录*/
-			if (i >= dp->fs->n_rootdir)	/* Report EOT if it reached end of static table */
+			if (i >= dp->fs->n_rootdir)	/* Report EOT if it reached end of static table 根目录到底*/
 				return FR_NO_FILE;
 		}
 		else {					/* Dynamic table 子目录*/
-			if (((i / (SS(dp->fs) / SZ_DIR)) & (dp->fs->csize - 1)) == 0) {	/* Cluster changed? */
+			if (((i / (SS(dp->fs) / SZ_DIR)) & (dp->fs->csize - 1)) == 0) {	/* Cluster changed? 下一簇*/
 				clst = get_fat(dp->fs, dp->clust);				/* Get next cluster */
 				if (clst <= 1) return FR_INT_ERR;
 				if (clst == 0xFFFFFFFF) return FR_DISK_ERR;
-				if (clst >= dp->fs->n_fatent) {					/* If it reached end of dynamic table, */
+				if (clst >= dp->fs->n_fatent) {					/* If it reached end of dynamic table,到达表末尾 */
 #if !_FS_READONLY
 					UINT c;
 					if (!stretch) return FR_NO_FILE;			/* If do not stretch, report EOT */
-					clst = create_chain(dp->fs, dp->clust);		/* Stretch cluster chain */
+					clst = create_chain(dp->fs, dp->clust);		/* Stretch cluster chain 延伸链表*/
 					if (clst == 0) return FR_DENIED;			/* No free cluster */
 					if (clst == 1) return FR_INT_ERR;
 					if (clst == 0xFFFFFFFF) return FR_DISK_ERR;
 					/* Clean-up stretched table */
-					if (sync_window(dp->fs)) return FR_DISK_ERR;/* Flush disk access window */
-					mem_set(dp->fs->win, 0, SS(dp->fs));		/* Clear window buffer */
-					dp->fs->winsect = clust2sect(dp->fs, clst);	/* Cluster start sector */
-					for (c = 0; c < dp->fs->csize; c++) {		/* Fill the new cluster with 0 */
+					if (sync_window(dp->fs)) return FR_DISK_ERR;/* Flush disk access window 写入*/
+					mem_set(dp->fs->win, 0, SS(dp->fs));		/* Clear window buffer 清空缓存*/
+					dp->fs->winsect = clust2sect(dp->fs, clst);	/* Cluster start sector 起始扇区*/
+					for (c = 0; c < dp->fs->csize; c++) {		/* Fill the new cluster with 0 填充*/
 						dp->fs->wflag = 1;
 						if (sync_window(dp->fs)) return FR_DISK_ERR;
 						dp->fs->winsect++;
 					}
 					dp->fs->winsect -= c;						/* Rewind window offset */
 #else
-					if (!stretch) return FR_NO_FILE;			/* If do not stretch, report EOT (this is to suppress warning) */
+					if (!stretch) return FR_NO_FILE;			/* 不延伸，返回结束If do not stretch, report EOT (this is to suppress warning) */
 					return FR_NO_FILE;							/* Report EOT */
 #endif
 				}
@@ -1251,7 +808,7 @@ FRESULT dir_alloc (
 		do {/*找空*/
 			res = move_window(dp->fs, dp->sect);
 			if (res != FR_OK) break;
-			if (dp->dir[0] == DDE || dp->dir[0] == 0) {	/* Is it a blank entry? */
+			if (dp->dir[0] == DDE || dp->dir[0] == 0) {	/* Is it a blank entry? 空的目录记录*/
 				if (++n == nent) break;	/* A block of contiguous entries is found */
 			} else {
 				n = 0;					/* Not a blank entry. Restart to search */
@@ -1274,14 +831,14 @@ FRESULT dir_alloc (
 static
 DWORD ld_clust (
 	FATFS* fs,	/* Pointer to the fs object */
-	BYTE* dir	/* Pointer to the directory entry */
+	BYTE* dir	/* Pointer to the directory entry 目录指针*/
 )
 {
 	DWORD cl;
 
 	cl = LD_WORD(dir+DIR_FstClusLO);
 	if (fs->fs_type == FS_FAT32)
-		cl |= (DWORD)LD_WORD(dir+DIR_FstClusHI) << 16;
+		cl |= (DWORD)LD_WORD(dir+DIR_FstClusHI) << 16;/*fat32下高16位*/
 
 	return cl;
 }
@@ -1303,194 +860,9 @@ void st_clust (
 
 
 /*-----------------------------------------------------------------------*/
-/* LFN handling - Test/Pick/Fit an LFN segment from/to directory entry   */
-/*-----------------------------------------------------------------------*/
-#if _USE_LFN
-static
-const BYTE LfnOfs[] = {1,3,5,7,9,14,16,18,20,22,24,28,30};	/* Offset of LFN characters in the directory entry */
-
-
-static
-int cmp_lfn (			/* 1:Matched, 0:Not matched */
-	WCHAR* lfnbuf,		/* Pointer to the LFN to be compared */
-	BYTE* dir			/* Pointer to the directory entry containing a part of LFN */
-)
-{
-	UINT i, s;
-	WCHAR wc, uc;
-
-
-	i = ((dir[LDIR_Ord] & ~LLE) - 1) * 13;	/* Get offset in the LFN buffer */
-	s = 0; wc = 1;
-	do {
-		uc = LD_WORD(dir+LfnOfs[s]);	/* Pick an LFN character from the entry */
-		if (wc) {	/* Last character has not been processed */
-			wc = ff_wtoupper(uc);		/* Convert it to upper case */
-			if (i >= _MAX_LFN || wc != ff_wtoupper(lfnbuf[i++]))	/* Compare it */
-				return 0;				/* Not matched */
-		} else {
-			if (uc != 0xFFFF) return 0;	/* Check filler */
-		}
-	} while (++s < 13);				/* Repeat until all characters in the entry are checked */
-
-	if ((dir[LDIR_Ord] & LLE) && wc && lfnbuf[i])	/* Last segment matched but different length */
-		return 0;
-
-	return 1;						/* The part of LFN matched */
-}
-
-
-
-static
-int pick_lfn (			/* 1:Succeeded, 0:Buffer overflow */
-	WCHAR* lfnbuf,		/* Pointer to the Unicode-LFN buffer */
-	BYTE* dir			/* Pointer to the directory entry */
-)
-{
-	UINT i, s;
-	WCHAR wc, uc;
-
-
-	i = ((dir[LDIR_Ord] & 0x3F) - 1) * 13;	/* Offset in the LFN buffer */
-
-	s = 0; wc = 1;
-	do {
-		uc = LD_WORD(dir+LfnOfs[s]);		/* Pick an LFN character from the entry */
-		if (wc) {	/* Last character has not been processed */
-			if (i >= _MAX_LFN) return 0;	/* Buffer overflow? */
-			lfnbuf[i++] = wc = uc;			/* Store it */
-		} else {
-			if (uc != 0xFFFF) return 0;		/* Check filler */
-		}
-	} while (++s < 13);						/* Read all character in the entry */
-
-	if (dir[LDIR_Ord] & LLE) {				/* Put terminator if it is the last LFN part */
-		if (i >= _MAX_LFN) return 0;		/* Buffer overflow? */
-		lfnbuf[i] = 0;
-	}
-
-	return 1;
-}
-
-
-#if !_FS_READONLY
-static
-void fit_lfn (
-	const WCHAR* lfnbuf,	/* Pointer to the LFN buffer */
-	BYTE* dir,				/* Pointer to the directory entry */
-	BYTE ord,				/* LFN order (1-20) */
-	BYTE sum				/* SFN sum */
-)
-{
-	UINT i, s;
-	WCHAR wc;
-
-
-	dir[LDIR_Chksum] = sum;			/* Set check sum */
-	dir[LDIR_Attr] = AM_LFN;		/* Set attribute. LFN entry */
-	dir[LDIR_Type] = 0;
-	ST_WORD(dir+LDIR_FstClusLO, 0);
-
-	i = (ord - 1) * 13;				/* Get offset in the LFN buffer */
-	s = wc = 0;
-	do {
-		if (wc != 0xFFFF) wc = lfnbuf[i++];	/* Get an effective character */
-		ST_WORD(dir+LfnOfs[s], wc);	/* Put it */
-		if (!wc) wc = 0xFFFF;		/* Padding characters following last character */
-	} while (++s < 13);
-	if (wc == 0xFFFF || !lfnbuf[i]) ord |= LLE;	/* Bottom LFN part is the start of LFN sequence */
-	dir[LDIR_Ord] = ord;			/* Set the LFN order */
-}
-
-#endif
-#endif
-
-
-
-
-/*-----------------------------------------------------------------------*/
-/* Create numbered name                                                  */
-/*-----------------------------------------------------------------------*/
-#if _USE_LFN
-static
-void gen_numname (
-	BYTE* dst,			/* Pointer to the buffer to store numbered SFN */
-	const BYTE* src,	/* Pointer to SFN */
-	const WCHAR* lfn,	/* Pointer to LFN */
-	UINT seq			/* Sequence number */
-)
-{
-	BYTE ns[8], c;
-	UINT i, j;
-
-
-	mem_cpy(dst, src, 11);
-
-	if (seq > 5) {	/* On many collisions, generate a hash number instead of sequential number */
-		WCHAR wc;
-		DWORD sr = seq;
-
-		while (*lfn) {	/* Create a CRC */
-			wc = *lfn++;
-			for (i = 0; i < 16; i++) {
-				sr = (sr << 1) + (wc & 1);
-				wc >>= 1;
-				if (sr & 0x10000) sr ^= 0x11021;
-			}
-		}
-		seq = (UINT)sr;
-	}
-
-	/* itoa (hexdecimal) */
-	i = 7;
-	do {
-		c = (seq % 16) + '0';
-		if (c > '9') c += 7;
-		ns[i--] = c;
-		seq /= 16;
-	} while (seq);
-	ns[i] = '~';
-
-	/* Append the number */
-	for (j = 0; j < i && dst[j] != ' '; j++) {
-		if (IsDBCS1(dst[j])) {
-			if (j == i - 1) break;
-			j++;
-		}
-	}
-	do {
-		dst[j++] = (i < 8) ? ns[i++] : ' ';
-	} while (j < 8);
-}
-#endif
-
-
-
-
-/*-----------------------------------------------------------------------*/
-/* Calculate sum of an SFN                                               */
-/*-----------------------------------------------------------------------*/
-#if _USE_LFN
-static
-BYTE sum_sfn (
-	const BYTE* dir		/* Pointer to the SFN entry */
-)
-{
-	BYTE sum = 0;
-	UINT n = 11;
-
-	do sum = (sum >> 1) + (sum << 7) + *dir++; while (--n);
-	return sum;
-}
-#endif
-
-
-
-
-/*-----------------------------------------------------------------------*/
 /* Directory handling - Find an object in the directory                  */
 /*-----------------------------------------------------------------------*/
-/*目录中查找*/
+/*目录中查找用于长文件名*/
 static
 FRESULT dir_find (
 	DIR* dp			/* Pointer to the directory object linked to the file name */
@@ -1498,47 +870,21 @@ FRESULT dir_find (
 {
 	FRESULT res;
 	BYTE c, *dir;
-#if _USE_LFN
-	BYTE a, ord, sum;
-#endif
+
 
 	res = dir_sdi(dp, 0);			/* Rewind directory object 重置*/
 	if (res != FR_OK) return res;
 
-#if _USE_LFN
-	ord = sum = 0xFF; dp->lfn_idx = 0xFFFF;	/* Reset LFN sequence */
-#endif
+
 	do {
 		res = move_window(dp->fs, dp->sect);
 		if (res != FR_OK) break;
 		dir = dp->dir;					/* Ptr to the directory entry of current index 当前索引的文件名*/
 		c = dir[DIR_Name];
 		if (c == 0) { res = FR_NO_FILE; break; }	/* Reached to end of table */
-#if _USE_LFN	/* LFN configuration */
-		a = dir[DIR_Attr] & AM_MASK;
-		if (c == DDE || ((a & AM_VOL) && a != AM_LFN)) {	/* An entry without valid data */
-			ord = 0xFF; dp->lfn_idx = 0xFFFF;	/* Reset LFN sequence */
-		} else {
-			if (a == AM_LFN) {			/* An LFN entry is found */
-				if (dp->lfn) {
-					if (c & LLE) {		/* Is it start of LFN sequence? */
-						sum = dir[LDIR_Chksum];
-						c &= ~LLE; ord = c;	/* LFN start order */
-						dp->lfn_idx = dp->index;	/* Start index of LFN */
-					}
-					/* Check validity of the LFN entry and compare it with given name */
-					ord = (c == ord && sum == dir[LDIR_Chksum] && cmp_lfn(dp->lfn, dir)) ? ord - 1 : 0xFF;
-				}
-			} else {					/* An SFN entry is found */
-				if (!ord && sum == sum_sfn(dir)) break;	/* LFN matched? */
-				if (!(dp->fn[NS] & NS_LOSS) && !mem_cmp(dir, dp->fn, 11)) break;	/* SFN matched? */
-				ord = 0xFF; dp->lfn_idx = 0xFFFF;	/* Reset LFN sequence */
-			}
-		}
-#else		/* Non LFN configuration */
+
 		if (!(dir[DIR_Attr] & AM_VOL) && !mem_cmp(dir, dp->fn, 11)) /* Is it a valid entry? 找到退出*/
 			break;
-#endif
 		res = dir_next(dp, 0);		/* Next entry 下一个项*/
 	} while (res == FR_OK);
 
@@ -1560,40 +906,18 @@ FRESULT dir_read (
 {
 	FRESULT res;
 	BYTE a, c, *dir;
-#if _USE_LFN
-	BYTE ord = 0xFF, sum = 0xFF;
-#endif
 
 	res = FR_NO_FILE;
 	while (dp->sect) {
 		res = move_window(dp->fs, dp->sect);
 		if (res != FR_OK) break;
-		dir = dp->dir;					/* Ptr to the directory entry of current index */
+		dir = dp->dir;					/* Ptr to the directory entry of current index 当前索引文件*/
 		c = dir[DIR_Name];
-		if (c == 0) { res = FR_NO_FILE; break; }	/* Reached to end of table */
+		if (c == 0) { res = FR_NO_FILE; break; }	/* Reached to end of table 到底了*/
 		a = dir[DIR_Attr] & AM_MASK;
-#if _USE_LFN	/* LFN configuration */
-		if (c == DDE || (!_FS_RPATH && c == '.') || (int)(a == AM_VOL) != vol) {	/* An entry without valid data */
-			ord = 0xFF;
-		} else {
-			if (a == AM_LFN) {			/* An LFN entry is found */
-				if (c & LLE) {			/* Is it start of LFN sequence? */
-					sum = dir[LDIR_Chksum];
-					c &= ~LLE; ord = c;
-					dp->lfn_idx = dp->index;
-				}
-				/* Check LFN validity and capture it */
-				ord = (c == ord && sum == dir[LDIR_Chksum] && pick_lfn(dp->lfn, dir)) ? ord - 1 : 0xFF;
-			} else {					/* An SFN entry is found */
-				if (ord || sum != sum_sfn(dir))	/* Is there a valid LFN? */
-					dp->lfn_idx = 0xFFFF;		/* It has no LFN. */
-				break;
-			}
-		}
-#else		/* Non LFN configuration */
-		if (c != DDE && (_FS_RPATH || c != '.') && a != AM_LFN && (int)(a == AM_VOL) == vol)	/* Is it a valid entry? */
+
+		if (c != DDE && (_FS_RPATH || c != '.') && a != AM_LFN && (int)(a == AM_VOL) == vol)	/* Is it a valid entry? 有效入口*/
 			break;
-#endif
 		res = dir_next(dp, 0);				/* Next entry */
 		if (res != FR_OK) break;
 	}
@@ -1608,7 +932,7 @@ FRESULT dir_read (
 
 
 /*-----------------------------------------------------------------------*/
-/* Register an object to the directory                                   */
+/* Register an object to the directory      向目录注册一个恶文件                             */
 /*-----------------------------------------------------------------------*/
 #if !_FS_READONLY
 static
@@ -1617,63 +941,15 @@ FRESULT dir_register (	/* FR_OK:Successful, FR_DENIED:No free entry or too many 
 )
 {
 	FRESULT res;
-#if _USE_LFN	/* LFN configuration */
-	UINT n, nent;
-	BYTE sn[12], *fn, sum;
-	WCHAR *lfn;
 
-
-	fn = dp->fn; lfn = dp->lfn;
-	mem_cpy(sn, fn, 12);
-
-	if (_FS_RPATH && (sn[NS] & NS_DOT))		/* Cannot create dot entry */
-		return FR_INVALID_NAME;
-
-	if (sn[NS] & NS_LOSS) {			/* When LFN is out of 8.3 format, generate a numbered name */
-		fn[NS] = 0; dp->lfn = 0;			/* Find only SFN */
-		for (n = 1; n < 100; n++) {
-			gen_numname(fn, sn, lfn, n);	/* Generate a numbered name */
-			res = dir_find(dp);				/* Check if the name collides with existing SFN */
-			if (res != FR_OK) break;
-		}
-		if (n == 100) return FR_DENIED;		/* Abort if too many collisions */
-		if (res != FR_NO_FILE) return res;	/* Abort if the result is other than 'not collided' */
-		fn[NS] = sn[NS]; dp->lfn = lfn;
-	}
-
-	if (sn[NS] & NS_LFN) {			/* When LFN is to be created, allocate entries for an SFN + LFNs. */
-		for (n = 0; lfn[n]; n++) ;
-		nent = (n + 25) / 13;
-	} else {						/* Otherwise allocate an entry for an SFN  */
-		nent = 1;
-	}
-	res = dir_alloc(dp, nent);		/* Allocate entries */
-
-	if (res == FR_OK && --nent) {	/* Set LFN entry if needed */
-		res = dir_sdi(dp, dp->index - nent);
-		if (res == FR_OK) {
-			sum = sum_sfn(dp->fn);	/* Sum value of the SFN tied to the LFN */
-			do {					/* Store LFN entries in bottom first */
-				res = move_window(dp->fs, dp->sect);
-				if (res != FR_OK) break;
-				fit_lfn(dp->lfn, dp->dir, (BYTE)nent, sum);
-				dp->fs->wflag = 1;
-				res = dir_next(dp, 0);	/* Next entry */
-			} while (res == FR_OK && --nent);
-		}
-	}
-#else	/* Non LFN configuration */
 	res = dir_alloc(dp, 1);		/* Allocate an entry for SFN 分配入口*/
-#endif
+
 
 	if (res == FR_OK) {				/* Set SFN entry */
 		res = move_window(dp->fs, dp->sect);
 		if (res == FR_OK) {
 			mem_set(dp->dir, 0, SZ_DIR);	/* Clean the entry */
 			mem_cpy(dp->dir, dp->fn, 11);	/* Put SFN 写入文件名*/
-#if _USE_LFN
-			dp->dir[DIR_NTres] = dp->fn[NS] & (NS_BODY | NS_EXT);	/* Put NT flag */
-#endif
 			dp->fs->wflag = 1;/*等待写入*/
 		}
 	}
@@ -1695,25 +971,7 @@ FRESULT dir_remove (	/* FR_OK: Successful, FR_DISK_ERR: A disk error */
 )
 {
 	FRESULT res;
-#if _USE_LFN	/* LFN configuration */
-	UINT i;
 
-	i = dp->index;	/* SFN index */
-	res = dir_sdi(dp, (dp->lfn_idx == 0xFFFF) ? i : dp->lfn_idx);	/* Goto the SFN or top of the LFN entries */
-	if (res == FR_OK) {
-		do {
-			res = move_window(dp->fs, dp->sect);
-			if (res != FR_OK) break;
-			mem_set(dp->dir, 0, SZ_DIR);	/* Clear and mark the entry "deleted" */
-			*dp->dir = DDE;
-			dp->fs->wflag = 1;
-			if (dp->index >= i) break;	/* When reached SFN, all entries of the object has been deleted. */
-			res = dir_next(dp, 0);		/* Next entry */
-		} while (res == FR_OK);
-		if (res == FR_NO_FILE) res = FR_INT_ERR;
-	}
-
-#else			/* Non LFN configuration */
 	res = dir_sdi(dp, dp->index);/*跳转到索引文件*/
 	if (res == FR_OK) {
 		res = move_window(dp->fs, dp->sect);
@@ -1723,7 +981,6 @@ FRESULT dir_remove (	/* FR_OK: Successful, FR_DISK_ERR: A disk error */
 			dp->fs->wflag = 1;
 		}
 	}
-#endif
 
 	return res;
 }
@@ -1749,53 +1006,20 @@ void get_fileinfo (		/* No return code */
 	p = fno->fname;
 	if (dp->sect) {		/* Get SFN 获取名称*/
 		BYTE *dir = dp->dir;/*目录索引目标名称*/
-
 		i = 0;
-		while (i < 11) {		/* Copy name body and extension */
+		while (i < 11) {		/* Copy name body and extension 文件名和扩展名*/
 			c = (TCHAR)dir[i++];
 			if (c == ' ') continue;			/* Skip padding spaces */
 			if (c == NDDE) c = (TCHAR)DDE;	/* Restore replaced DDE character */
 			if (i == 9) *p++ = '.';			/* Insert a . if extension is exist 扩展名*/
-#if _USE_LFN
-			if (IsUpper(c) && (dir[DIR_NTres] & (i >= 9 ? NS_EXT : NS_BODY)))
-				c += 0x20;			/* To lower */
-#if _LFN_UNICODE
-			if (IsDBCS1(c) && i != 8 && i != 11 && IsDBCS2(dir[i]))
-				c = c << 8 | dir[i++];
-			c = ff_convert(c, 1);	/* OEM -> Unicode */
-			if (!c) c = '?';
-#endif
-#endif
 			*p++ = c;
 		}
 		fno->fattrib = dir[DIR_Attr];				/* Attribute 读取属性*/
-		fno->fsize = LD_DWORD(dir+DIR_FileSize);	/* Size */
+		fno->fsize = LD_DWORD(dir+DIR_FileSize);	/* Size 大小*/
 		fno->fdate = LD_WORD(dir+DIR_WrtDate);		/* Date */
 		fno->ftime = LD_WORD(dir+DIR_WrtTime);		/* Time */
 	}
-	*p = 0;		/* Terminate SFN string by a \0 */
-
-#if _USE_LFN
-	if (fno->lfname) {
-		WCHAR w, *lfn;
-
-		i = 0; p = fno->lfname;
-		if (dp->sect && fno->lfsize && dp->lfn_idx != 0xFFFF) {	/* Get LFN if available */
-			lfn = dp->lfn;
-			while ((w = *lfn++) != 0) {		/* Get an LFN character */
-#if !_LFN_UNICODE
-				w = ff_convert(w, 0);		/* Unicode -> OEM */
-				if (!w) { i = 0; break; }	/* No LFN if it could not be converted */
-				if (_DF1S && w >= 0x100)	/* Put 1st byte if it is a DBC (always false on SBCS cfg) */
-					p[i++] = (TCHAR)(w >> 8);
-#endif
-				if (i >= fno->lfsize - 1) { i = 0; break; }	/* No LFN if buffer overflow */
-				p[i++] = (TCHAR)w;
-			}
-		}
-		p[i] = 0;	/* Terminate LFN string by a \0 */
-	}
-#endif
+	*p = 0;		/* Terminate SFN string by a \0 文件名结束*/
 }
 #endif /* _FS_MINIMIZE <= 1 || _FS_RPATH >= 2*/
 
@@ -1812,128 +1036,8 @@ FRESULT create_name (
 	const TCHAR** path	/* Pointer to pointer to the segment in the path string */
 )
 {
-#if _USE_LFN	/* LFN configuration */
-	BYTE b, cf;
-	WCHAR w, *lfn;
-	UINT i, ni, si, di;
-	const TCHAR *p;
-
-	/* Create LFN in Unicode */
-	for (p = *path; *p == '/' || *p == '\\'; p++) ;	/* Strip duplicated separator 输入路径处理*/
-	lfn = dp->lfn;
-	si = di = 0;
-	for (;;) {
-		w = p[si++];					/* Get a character */
-		if (w < ' ' || w == '/' || w == '\\') break;	/* Break on end of segment */
-		if (di >= _MAX_LFN)				/* Reject too long name */
-			return FR_INVALID_NAME;
-#if !_LFN_UNICODE
-		w &= 0xFF;
-		if (IsDBCS1(w)) {				/* Check if it is a DBC 1st byte (always false on SBCS cfg) */
-			b = (BYTE)p[si++];			/* Get 2nd byte */
-			if (!IsDBCS2(b))
-				return FR_INVALID_NAME;	/* Reject invalid sequence */
-			w = (w << 8) + b;			/* Create a DBC */
-		}
-		w = ff_convert(w, 1);			/* Convert ANSI/OEM to Unicode */
-		if (!w) return FR_INVALID_NAME;	/* Reject invalid code */
-#endif
-		if (w < 0x80 && chk_chr("\"*:<>\?|\x7F", w)) /* Reject illegal characters for LFN */
-			return FR_INVALID_NAME;
-		lfn[di++] = w;					/* Store the Unicode character */
-	}
-	*path = &p[si];						/* Return pointer to the next segment */
-	cf = (w < ' ') ? NS_LAST : 0;		/* Set last segment flag if end of path */
-#if _FS_RPATH
-	if ((di == 1 && lfn[di-1] == '.') || /* Is this a dot entry? */
-		(di == 2 && lfn[di-1] == '.' && lfn[di-2] == '.')) {
-		lfn[di] = 0;
-		for (i = 0; i < 11; i++)
-			dp->fn[i] = (i < di) ? '.' : ' ';
-		dp->fn[i] = cf | NS_DOT;		/* This is a dot entry */
-		return FR_OK;
-	}
-#endif
-	while (di) {						/* Strip trailing spaces and dots */
-		w = lfn[di-1];
-		if (w != ' ' && w != '.') break;
-		di--;
-	}
-	if (!di) return FR_INVALID_NAME;	/* Reject nul string */
-
-	lfn[di] = 0;						/* LFN is created */
-
-	/* Create SFN in directory form */
-	mem_set(dp->fn, ' ', 11);
-	for (si = 0; lfn[si] == ' ' || lfn[si] == '.'; si++) ;	/* Strip leading spaces and dots */
-	if (si) cf |= NS_LOSS | NS_LFN;
-	while (di && lfn[di - 1] != '.') di--;	/* Find extension (di<=si: no extension) */
-
-	b = i = 0; ni = 8;
-	for (;;) {
-		w = lfn[si++];					/* Get an LFN character */
-		if (!w) break;					/* Break on end of the LFN */
-		if (w == ' ' || (w == '.' && si != di)) {	/* Remove spaces and dots */
-			cf |= NS_LOSS | NS_LFN; continue;
-		}
-
-		if (i >= ni || si == di) {		/* Extension or end of SFN */
-			if (ni == 11) {				/* Long extension */
-				cf |= NS_LOSS | NS_LFN; break;
-			}
-			if (si != di) cf |= NS_LOSS | NS_LFN;	/* Out of 8.3 format */
-			if (si > di) break;			/* No extension */
-			si = di; i = 8; ni = 11;	/* Enter extension section */
-			b <<= 2; continue;
-		}
-
-		if (w >= 0x80) {				/* Non ASCII character */
-#ifdef _EXCVT
-			w = ff_convert(w, 0);		/* Unicode -> OEM code */
-			if (w) w = ExCvt[w - 0x80];	/* Convert extended character to upper (SBCS) */
-#else
-			w = ff_convert(ff_wtoupper(w), 0);	/* Upper converted Unicode -> OEM code */
-#endif
-			cf |= NS_LFN;				/* Force create LFN entry */
-		}
-
-		if (_DF1S && w >= 0x100) {		/* Double byte character (always false on SBCS cfg) */
-			if (i >= ni - 1) {
-				cf |= NS_LOSS | NS_LFN; i = ni; continue;
-			}
-			dp->fn[i++] = (BYTE)(w >> 8);
-		} else {						/* Single byte character */
-			if (!w || chk_chr("+,;=[]", w)) {	/* Replace illegal characters for SFN */
-				w = '_'; cf |= NS_LOSS | NS_LFN;/* Lossy conversion */
-			} else {
-				if (IsUpper(w)) {		/* ASCII large capital */
-					b |= 2;
-				} else {
-					if (IsLower(w)) {	/* ASCII small capital */
-						b |= 1; w -= 0x20;
-					}
-				}
-			}
-		}
-		dp->fn[i++] = (BYTE)w;
-	}
-
-	if (dp->fn[0] == DDE) dp->fn[0] = NDDE;	/* If the first character collides with deleted mark, replace it with 0x05 */
-
-	if (ni == 8) b <<= 2;
-	if ((b & 0x0C) == 0x0C || (b & 0x03) == 0x03)	/* Create LFN entry when there are composite capitals */
-		cf |= NS_LFN;
-	if (!(cf & NS_LFN)) {						/* When LFN is in 8.3 format without extended character, NT flags are created */
-		if ((b & 0x03) == 0x01) cf |= NS_EXT;	/* NT flag (Extension has only small capital) */
-		if ((b & 0x0C) == 0x04) cf |= NS_BODY;	/* NT flag (Filename has only small capital) */
-	}
-
-	dp->fn[NS] = cf;	/* SFN is created */
-
-	return FR_OK;
 
 
-#else	/* Non-LFN configuration */
 	BYTE b, c, d, *sfn;
 	UINT ni, si, i;
 	const char *p;
@@ -1943,19 +1047,6 @@ FRESULT create_name (
 	sfn = dp->fn;
 	mem_set(sfn, ' ', 11);
 	si = i = b = 0; ni = 8;
-#if _FS_RPATH
-	if (p[si] == '.') { /* Is this a dot entry? */
-		for (;;) {
-			c = (BYTE)p[si++];
-			if (c != '.' || si >= 3) break;
-			sfn[i++] = c;
-		}
-		if (c != '/' && c != '\\' && c > ' ') return FR_INVALID_NAME;
-		*path = &p[si];									/* Return pointer to the next segment */
-		sfn[NS] = (c <= ' ') ? NS_LAST | NS_DOT : NS_DOT;	/* Set last segment flag if end of path */
-		return FR_OK;
-	}
-#endif
 	for (;;) {
 		c = (BYTE)p[si++];
 		if (c <= ' ' || c == '/' || c == '\\') break;	/* Break on end of segment */
@@ -1964,7 +1055,7 @@ FRESULT create_name (
 			i = 8; ni = 11;
 			b <<= 2; continue;
 		}
-		if (c >= 0x80) {				/* Extended character? */
+		if (c >= 0x80) {				/* Extended character? 超出范围*/
 			b |= 3;						/* Eliminate NT flag */
 #ifdef _EXCVT
 			c = ExCvt[c - 0x80];		/* To upper extended characters (SBCS cfg) */
@@ -2006,7 +1097,7 @@ FRESULT create_name (
 	sfn[NS] = c;		/* Store NT flag, File name is created */
 
 	return FR_OK;
-#endif
+
 }
 
 
@@ -2026,24 +1117,17 @@ FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
 	BYTE *dir, ns;
 
 
-#if _FS_RPATH
-	if (*path == '/' || *path == '\\') {	/* There is a heading separator */
-		path++;	dp->sclust = 0;				/* Strip it and start from the root directory */
-	} else {								/* No heading separator */
-		dp->sclust = dp->fs->cdir;			/* Start from the current directory */
-	}
-#else
+
 	if (*path == '/' || *path == '\\')		/* Strip heading separator if exist */
 		path++;
 	dp->sclust = 0;							/* Always start from the root directory根目录开始 */
-#endif
 
-	if ((UINT)*path < ' ') {				/* Null path name is the origin directory itself 空目录名*/
+	if ((UINT)*path < ' ') {				/* Null path name is the origin directory itself 无效目录名*/
 		res = dir_sdi(dp, 0);
 		dp->dir = 0;
 	} else {								/* Follow path */
 		for (;;) {
-			res = create_name(dp, &path);	/* Get a segment name of the path */
+			res = create_name(dp, &path);	/* Get a segment name of the path 从输入得到文件名*/
 			if (res != FR_OK) break;
 			res = dir_find(dp);				/* Find an object with the sagment name 查找文件*/
 			ns = dp->fn[NS];
@@ -2064,7 +1148,7 @@ FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
 			if (!(dir[DIR_Attr] & AM_DIR)) {	/* It is not a sub-directory and cannot follow 不是子目录无法继续*/
 				res = FR_NO_PATH; break;
 			}
-			dp->sclust = ld_clust(dp->fs, dir);/*更新返回信息进入子目录*/
+			dp->sclust = ld_clust(dp->fs, dir);/*更新返回信息进入子目录（通过改写起始簇）*/
 		}
 	}
 
@@ -2387,20 +1471,11 @@ FRESULT f_mount (
 	cfs = FatFs[vol];					/* Pointer to fs object */
 
 	if (cfs) {
-#if _FS_LOCK
-		clear_lock(cfs);
-#endif
-#if _FS_REENTRANT						/* Discard sync object of the current volume */
-		if (!ff_del_syncobj(cfs->sobj)) return FR_INT_ERR;
-#endif
 		cfs->fs_type = 0;				/* Clear old fs object */
 	}
 
 	if (fs) {
 		fs->fs_type = 0;				/* Clear new fs object */
-#if _FS_REENTRANT						/* Create sync object for the new volume */
-		if (!ff_cre_syncobj((BYTE)vol, &fs->sobj)) return FR_INT_ERR;
-#endif
 	}
 	FatFs[vol] = fs;					/* Register new fs object */
 
@@ -3972,7 +3047,7 @@ FRESULT f_forward (
 
 #if _USE_MKFS && !_FS_READONLY
 /*-----------------------------------------------------------------------*/
-/* Create File System on the Drive                                       */
+/* Create File System on the Drive    格式化                            */
 /*-----------------------------------------------------------------------*/
 #define N_ROOTDIR	512		/* Number of root directory entries for FAT12/16 根目录项目数*/
 #define N_FATS		1		/* Number of FAT copies (1 or 2) fat数*/
