@@ -4,6 +4,7 @@
 #include <locale.h>
 #include "diskio.h"
 #include "ff.h"
+
 const TCHAR HelpStr[] =
 "[Disk contorls]\n" 
 " di <pd#> - Initialize disk\n"
@@ -48,6 +49,20 @@ BYTE Buff[262144];          /* 缓存 */
                                ^    5th call returns 255 and next ptr
                                   ^ 6th call fails and returns 0
 */
+DWORD getsize(char * fn){
+    DWORD count=0;
+    FILE *fp;
+    fp=fopen(fn,"rb+");
+    while(!feof(fp)){
+        fgetc(fp);
+        count++;
+    }
+    fclose(fp);
+    return count;
+}                                  
+
+
+                                  
 void xcopy(BYTE idx){
     BYTE buff[512];
     DWORD ofs=FatFs[0].dirbase;
@@ -55,6 +70,7 @@ void xcopy(BYTE idx){
     DWORD size,remain;
     FILE *tar;
     FILE *fp;
+
     disk_read(0,buff,FatFs[0].dirbase,1);
     fsect=LD_WORD(buff+26+32*idx);
     remain=size=LD_DWORD(buff+28+32*idx);
@@ -313,7 +329,7 @@ void main (void)
                 break;
             case 't': 
                 /*xprint(0);*/
-                xcopy(2);
+                xput(&FatFs[0],"ff.c");
                 break;
 
         }

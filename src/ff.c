@@ -119,8 +119,7 @@
 Copyright (C) 2014, ChaN, all right reserved.*/
 #include "ff.h"			/* Declarations of FatFs API */
 #include "diskio.h"		/* Declarations of disk I/O functions */
-
-
+#include <stdio.h>/*外部文件读写*/
 
 
 /*--------------------------------------------------------------------------
@@ -558,6 +557,7 @@ FRESULT put_fat (
 			res = FR_INT_ERR;
 		}
 		fs->wflag = 1;/*标记缓存未写入状态*/
+		sync_window(fs);
 	}
 
 	return res;
@@ -3447,3 +3447,57 @@ int f_printf (
 
 #endif /* !_FS_READONLY */
 #endif /* _USE_STRFUNC */
+/*My New Functions*/
+void xput(FATFS* fs,char * ptr){
+    BYTE buff[512];
+    BYTE file[512];
+    DWORD ofs=fs->dirbase;
+    WORD fsect,dsect;
+    DWORD size,remain;
+    FILE *tar;
+    BYTE idx=0,count=0;
+    char * fn=ptr;
+    disk_read(0,buff,fs->dirbase,1);
+    tar=fopen(fn,"rb+");
+    remain=size=getsize(fn);
+    while(1){
+        if(buff[32*idx]==0) break;
+        else idx++;
+    }
+    for(count=0;count<8&&*ptr;count++){
+        if (*ptr>47&&*ptr<58||*ptr>=65&&*ptr<=90||*ptr>=97&&*ptr<=122)
+            if(*ptr>=97&&*ptr<=122)
+                buff[32*idx+count]=*ptr-32;
+            else
+                buff[32*idx+count]=*ptr;
+        else
+            if (*(ptr++)=='.')
+                break;
+        ptr++;
+    }
+    for(count=0;count<3&&*ptr;count++){
+        if (*ptr>47&&*ptr<58||*ptr>=65&&*ptr<=90||*ptr>=97&&*ptr<=122)
+            if(*ptr>=97&&*ptr<=122)
+                buff[32*idx+count+8]=*ptr-32;
+            else
+                buff[32*idx+count+8]=*ptr;
+        ptr++;
+    }
+    buff[32*idx+11]=0x20;
+    dsect=fsect=create_chain(fs,0);
+    while(remain>512){
+        fseek(tar,size-remain,0);
+        fread(file,512,1,tar);
+        disk_write(0,file,fs->database+dsect-2,1);
+        dsect=create_chain(fs,dsect);
+        remain-=512;
+    }
+    fseek(tar,size-remain,0);
+    fread(file,size-remain,1,tar);
+    disk_write(0,file,fs->database+dsect-2,1);
+    ST_DWORD(32*idx+buff+22,get_fattime());
+    ST_DWORD(32*idx+buff+28,size);
+    ST_WORD(32*idx+buff+26,fsect);
+    printf("%lx\n",buff+28 );
+    disk_write(0,buff,fs->dirbase,1);
+}
