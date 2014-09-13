@@ -1,18 +1,18 @@
 # Project: 工程1
 # Makefile created by Dev-C++ 4.9.9.1
 
-CPP  = g++.exe
-CC   = gcc.exe
+CPP  = g++.exe -D__DEBUG__
+CC   = gcc.exe -D__DEBUG__
 WINDRES = windres.exe
 RES  = 
 OBJ  = diskio.o ff.o main.o $(RES)
 LINKOBJ  = diskio.o ff.o main.o $(RES)
-LIBS =  -L"d:/Dev-Cpp/lib"  
-INCS =  -I"d:/Dev-Cpp/include"  -I"C:/Users/lenovo/Desktop/File-Sys/src" 
-CXXINCS =  -I"d:/Dev-Cpp/include/c++/3.3.1"  -I"d:/Dev-Cpp/include/c++/3.3.1/mingw32"  -I"d:/Dev-Cpp/include/c++/3.3.1/backward"  -I"d:/Dev-Cpp/lib/gcc-lib/mingw32/3.3.1/include"  -I"d:/Dev-Cpp/include"  -I"C:/Users/lenovo/Desktop/File-Sys/src" 
+LIBS =  -L"C:/Users/SC/Desktop/Dev-Cpp/lib"  -g3 
+INCS =  -I"C:/Users/SC/Desktop/Dev-Cpp/include" 
+CXXINCS =  -I"C:/Users/SC/Desktop/Dev-Cpp/include/c++/3.3.1"  -I"C:/Users/SC/Desktop/Dev-Cpp/include/c++/3.3.1/mingw32"  -I"C:/Users/SC/Desktop/Dev-Cpp/include/c++/3.3.1/backward"  -I"C:/Users/SC/Desktop/Dev-Cpp/lib/gcc-lib/mingw32/3.3.1/include"  -I"C:/Users/SC/Desktop/Dev-Cpp/include" 
 BIN  = 工程1.exe
-CXXFLAGS = $(CXXINCS)   -ansi -w
-CFLAGS = $(INCS)   -ansi -w
+CXXFLAGS = $(CXXINCS)   -ansi -w -g3
+CFLAGS = $(INCS)   -ansi -w -g3
 
 .PHONY: all all-before all-after clean clean-custom
 
@@ -25,11 +25,11 @@ clean: clean-custom
 $(BIN): $(OBJ)
 	$(CC) $(LINKOBJ) -o "工程1.exe" $(LIBS)
 
-diskio.o: diskio.c diskio.h integer.h d:/Dev-Cpp/include/windows.h   d:/Dev-Cpp/include/tchar.h d:/Dev-Cpp/include/stdio.h   d:/Dev-Cpp/include/time.h
+diskio.o: diskio.c
 	$(CC) -c diskio.c -o diskio.o $(CFLAGS)
 
-ff.o: ff.c ff.h integer.h d:/Dev-Cpp/include/windows.h   d:/Dev-Cpp/include/tchar.h ffconf.h diskio.h
+ff.o: ff.c
 	$(CC) -c ff.c -o ff.o $(CFLAGS)
 
-main.o: main.c d:/Dev-Cpp/include/string.h d:/Dev-Cpp/include/_mingw.h   d:/Dev-Cpp/include/stddef.h d:/Dev-Cpp/include/stdarg.h   d:/Dev-Cpp/include/stdio.h d:/Dev-Cpp/include/locale.h diskio.h   integer.h d:/Dev-Cpp/include/windows.h d:/Dev-Cpp/include/tchar.h ff.h   ffconf.h
+main.o: main.c
 	$(CC) -c main.c -o main.o $(CFLAGS)

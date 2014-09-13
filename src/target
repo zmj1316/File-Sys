@@ -48,60 +48,7 @@ BYTE Buff[262144];          /* 缓存 */
                                ^    5th call returns 255 and next ptr
                                   ^ 6th call fails and returns 0
 */
-void xcopy(BYTE idx){
-    BYTE buff[512];
-    DWORD ofs=FatFs[0].dirbase;
-    WORD fsect,dsect;
-    DWORD size,remain;
-    FILE *tar;
-    FILE *fp;
-    disk_read(0,buff,FatFs[0].dirbase,1);
-    fsect=LD_WORD(buff+26+32*idx);
-    remain=size=LD_DWORD(buff+28+32*idx);
-    printf("%lx\n", fsect);
-    getch();
-    tar=fopen("target","wb+");
-    fp=fopen("0.img","rb+");
-    dsect=fsect;
-    while(remain>512){
-        disk_read(0,buff,FatFs[0].database+dsect-2,1);
-        printf("%lx\n", dsect);
-        fseek(tar,size-remain,0);
-        printf("%lx\n",size-remain );
-        fwrite(buff,512,1,tar);
-        dsect=get_fat(&FatFs[0],dsect);
-        remain-=512;
-    }
-    disk_read(0,buff,FatFs[0].database+dsect-2,1);
-    fseek(tar,size-remain,0);
-    printf("%lx\n",size-remain );
-    fwrite(buff,remain,1,tar);
-    fclose(tar);
 
-}
-void xprint(BYTE idx){
-    BYTE buff[512];
-    FILE *fp;
-    DWORD ofs=FatFs[0].dirbase;
-    DWORD fsect,dsect;
-    printf("%lx\n",ofs);
-    fp=fopen("0.img","rb+");
-    disk_read(0,buff,FatFs[0].dirbase,1);
-    fsect=LD_WORD(buff+26+32*idx);
-    disk_read(0,buff,FatFs[0].database+fsect-2,1);
-    buff[511]=0;
-    printf("%s\n",buff);
-    getch();
-    dsect=get_fat(&FatFs[0],fsect);
-        getch();
-    fseek(fp,(FatFs[0].database+dsect-1)*512,0);
-        getch();
-    fread(buff,512,1,fp);
-        getch();
-    buff[511]=0;
-    printf("%s\n",buff);
-    fclose(fp);
-}
 int xatoi (         /* 0:Failed, 1:Successful */
     TCHAR **str,    /* Pointer to pointer to the string */
     long *res       /* Pointer to a valiable to store the value */
@@ -219,7 +166,7 @@ void main (void)
         printf(">");
         scanf("%s",ptr);
         switch (*ptr++){
-            case 'q': return 0; 
+            case 'q': return 0;
             case '?': printf("%s\n",HelpStr ); break;
             case 'd':  /* Disk I/O command */
                 switch (*ptr++) {   /* 第二个指令 */
@@ -254,9 +201,7 @@ void main (void)
                         printf("Sector size = %u\n", w);
                     if (disk_ioctl((BYTE)p1, GET_SECTOR_COUNT, &dw) == RES_OK)
                         printf("Number of sectors = %u\n", dw);
-                    break;
                 }
-                break;
 
             case 'f' :  /* FatFs test command */
                 switch (*ptr++) {   /* Branch by secondary command character */
@@ -289,7 +234,6 @@ void main (void)
                 case 'r':
                     f_unlink(ptr);
                     break;
-                break;
                 }
             case 'l':
                 switch (*ptr++){
@@ -307,14 +251,10 @@ void main (void)
                             break;
                     }
                     break;
-                case 'f': break;
+                case 'f':
                     
                 }
-                break;
-            case 't': 
-                /*xprint(0);*/
-                xcopy(2);
-                break;
+            //default: printf("What Hell Are You Doing?! \nJust Type '?' \n");
 
         }
     }
