@@ -1523,10 +1523,6 @@ FRESULT f_open (
 		if (res == FR_OK) {
 			if (!dir)	/* Default directory itself */
 				res = FR_INVALID_NAME;
-#if _FS_LOCK
-			else
-				res = chk_lock(&dj, (mode & ~FA_READ) ? 1 : 0);
-#endif
 		}
 		/* Create or Open a file */
 		if (mode & (FA_CREATE_ALWAYS | FA_OPEN_ALWAYS | FA_CREATE_NEW)) {
@@ -1534,11 +1530,9 @@ FRESULT f_open (
 
 			if (res != FR_OK) {					/* No file, create new */
 				if (res == FR_NO_FILE)			/* There is no file to open, create a new entry */
-#if _FS_LOCK
-					res = enq_lock() ? dir_register(&dj) : FR_TOO_MANY_OPEN_FILES;
-#else
+
 					res = dir_register(&dj);
-#endif
+
 				mode |= FA_CREATE_ALWAYS;		/* File is created */
 				dir = dj.dir;					/* New entry */
 			}
@@ -1583,10 +1577,6 @@ FRESULT f_open (
 				mode |= FA__WRITTEN;
 			fp->dir_sect = dj.fs->winsect;		/* Pointer to the directory entry */
 			fp->dir_ptr = dir;
-#if _FS_LOCK
-			fp->lockid = inc_lock(&dj, (mode & ~FA_READ) ? 1 : 0);
-			if (!fp->lockid) res = FR_INT_ERR;
-#endif
 		}
 
 #else				/* R/O configuration */
@@ -1609,9 +1599,6 @@ FRESULT f_open (
 			fp->fsize = LD_DWORD(dir+DIR_FileSize);	/* File size */
 			fp->fptr = 0;						/* File pointer */
 			fp->dsect = 0;
-#if _USE_FASTSEEK
-			fp->cltbl = 0;						/* Normal seek mode */
-#endif
 			fp->fs = dj.fs;	 					/* Validate file object */
 			fp->id = fp->fs->id;
 		}
