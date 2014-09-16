@@ -11,7 +11,10 @@ const TCHAR HelpStr[] =
 " ds <pd#> - Show disk status\n"
 "[Buffer contorls]\n"
 "[File system contorls]\n"
+"fi[ld#]<mount>\n"
 " fl [<path>] - Show a directory\n"
+"fc[Filename] - creat a file\n"
+
 ;
 
 

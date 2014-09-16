@@ -114,7 +114,9 @@
 / May 19,'14 R0.10b Fixed a hard error in the disk I/O layer can collapse the directory entry.
 /                   Fixed LFN entry is not deleted on delete/rename an object with lossy converted SFN.
 /---------------------------------------------------------------------------*/
-
+/*由Key Zhang修改用作计算机硬件基础课程作业基于原作者开源协议仅供非商业使用，
+转载需保留以上信息
+Copyright (C) 2014, ChaN, all right reserved.*/
 #include "ff.h"			/* Declarations of FatFs API */
 #include "diskio.h"		/* Declarations of disk I/O functions */
 
@@ -189,7 +191,7 @@
 / structure member because the structure is not binary compatible between
 / different platforms */
 /*以下为文件系统结构偏移*/
-/*引导扇区不处理*/
+/*引导扇区不处理 不打算格式化了*/
 #define BS_jmpBoot			0		/* Jump instruction (3) 启动跳转*/
 #define BS_OEMName			3		/* OEM name (8) 制造商*/
 #define BPB_BytsPerSec		11		/* Sector size [byte] (2) */
@@ -241,7 +243,7 @@
 #define	DIR_WrtDate			24		/* Modified date (2) */
 #define	DIR_FstClusLO		26		/* Lower 16-bit of first cluster (2) */
 #define	DIR_FileSize		28		/* File size (4) */
-/*长文件名不支持*/
+/*长文件名不支持留着看看吧*/
 #define	LDIR_Ord			0		/* LFN entry order and LLE flag (1) */
 #define	LDIR_Attr			11		/* LFN attribute (1) */
 #define	LDIR_Type			12		/* LFN type (1) */
@@ -459,7 +461,7 @@ DWORD clust2sect (	/* !=0: Sector number, 0: Failed - invalid cluster# */
 /* FAT access - Read value of a FAT entry                                */
 /*-----------------------------------------------------------------------*/
 
-/*读取fat中入口并返回默认为fat16*/
+/*簇读取fat中入口并返回默认为fat16*/
 DWORD get_fat (	/* 0xFFFFFFFF:Disk error, 1:Internal error, Else:Cluster status */
 	FATFS* fs,	/* File system object */
 	DWORD clst	/* Cluster# to get the link information */
@@ -827,7 +829,7 @@ FRESULT dir_alloc (
 /*-----------------------------------------------------------------------*/
 /* Directory handling - Load/Store start cluster number                  */
 /*-----------------------------------------------------------------------*/
-/*写入/读取目录起始簇*/
+/*写入/读取目录记录中的起始簇*/
 static
 DWORD ld_clust (
 	FATFS* fs,	/* Pointer to the fs object */
@@ -846,7 +848,7 @@ DWORD ld_clust (
 
 #if !_FS_READONLY
 static
-void st_clust (
+void st_clust (/*写入目录记录*/
 	BYTE* dir,	/* Pointer to the directory entry */
 	DWORD cl	/* Value to be set */
 )
@@ -932,7 +934,7 @@ FRESULT dir_read (
 
 
 /*-----------------------------------------------------------------------*/
-/* Register an object to the directory      向目录注册一个恶文件                             */
+/* Register an object to the directory      向目录注册一个文件                             */
 /*-----------------------------------------------------------------------*/
 #if !_FS_READONLY
 static
@@ -1246,7 +1248,8 @@ BYTE check_fs (	/* 0:FAT boor sector, 1:Valid boor sector but not FAT, 2:Not a b
 
 
 /*-----------------------------------------------------------------------*/
-/* Find logical drive and check if the volume is mounted   检查是否挂载       */
+/* Find logical drive and check if the volume is mounted   重要挂载函数
+读取分区信息写入内存结构       */
 /*-----------------------------------------------------------------------*/
 
 static
@@ -1295,10 +1298,7 @@ FRESULT find_volume (	/* FR_OK(0): successful, !=0: any error occurred */
 		return FR_NOT_READY;			/* Failed to initialize due to no medium or hard error */
 	if (!_FS_READONLY && wmode && (stat & STA_PROTECT))	/* Check disk write protection if needed */
 		return FR_WRITE_PROTECTED;
-#if _MAX_SS != _MIN_SS						/* Get sector size (multiple sector size cfg only) */
-	if (disk_ioctl(fs->drv, GET_SECTOR_SIZE, &SS(fs)) != RES_OK
-		|| SS(fs) < _MIN_SS || SS(fs) > _MAX_SS) return FR_DISK_ERR;
-#endif
+
 	/* Find an FAT partition on the drive. Supports only generic partitioning, FDISK and SFD. */
 	bsect = 0;
 	fmt = check_fs(fs, bsect);					/* Load sector 0 and check if it is an FAT boot sector as SFD */
@@ -1403,12 +1403,8 @@ FRESULT find_volume (	/* FR_OK(0): successful, !=0: any error occurred */
 #endif
 	fs->fs_type = fmt;	/* FAT sub-type */
 	fs->id = ++Fsid;	/* File system mount ID */
-#if _FS_RPATH
-	fs->cdir = 0;		/* Set current directory to root */
-#endif
-#if _FS_LOCK			/* Clear file lock semaphores */
-	clear_lock(fs);
-#endif
+
+
 
 	return FR_OK;
 }
@@ -1417,7 +1413,7 @@ FRESULT find_volume (	/* FR_OK(0): successful, !=0: any error occurred */
 
 
 /*-----------------------------------------------------------------------*/
-/* Check if the file/directory object is valid or not        检查是否有效            */
+/* Check if the file/directory object is valid or not        检查是否有效  无效          */
 /*-----------------------------------------------------------------------*/
 
 static
@@ -1528,13 +1524,13 @@ FRESULT f_open (
 		if (mode & (FA_CREATE_ALWAYS | FA_OPEN_ALWAYS | FA_CREATE_NEW)) {
 			DWORD dw, cl;
 
-			if (res != FR_OK) {					/* No file, create new */
+			if (res != FR_OK) {					/* No file, create new 创建文件*/
 				if (res == FR_NO_FILE)			/* There is no file to open, create a new entry */
 
-					res = dir_register(&dj);
+					res = dir_register(&dj);/*在目录建记录*/
 
-				mode |= FA_CREATE_ALWAYS;		/* File is created */
-				dir = dj.dir;					/* New entry */
+				mode |= FA_CREATE_ALWAYS;		/* File is created 文件存在*/
+				dir = dj.dir;					/* New entry 覆盖*/
 			}
 			else {								/* Any object is already existing */
 				if (dir[DIR_Attr] & (AM_RDO | AM_DIR)) {	/* Cannot overwrite it (R/O or DIR) */
@@ -1545,18 +1541,18 @@ FRESULT f_open (
 				}
 			}
 			if (res == FR_OK && (mode & FA_CREATE_ALWAYS)) {	/* Truncate it if overwrite mode */
-				dw = get_fattime();				/* Created time */
+				dw = get_fattime();				/* Created time 时间*/
 				ST_DWORD(dir+DIR_CrtTime, dw);
-				dir[DIR_Attr] = 0;				/* Reset attribute */
-				ST_DWORD(dir+DIR_FileSize, 0);	/* size = 0 */
-				cl = ld_clust(dj.fs, dir);		/* Get start cluster */
-				st_clust(dir, 0);				/* cluster = 0 */
+				dir[DIR_Attr] = 0;				/* Reset attribute 重置属性*/
+				ST_DWORD(dir+DIR_FileSize, 0);	/* size = 0 大小*/
+				cl = ld_clust(dj.fs, dir);		/* Get start cluster 起始簇*/
+				st_clust(dir, 0);				/* cluster = 0 重置*/
 				dj.fs->wflag = 1;
-				if (cl) {						/* Remove the cluster chain if exist */
+				if (cl) {						/* Remove the cluster chain if exist 移除旧链*/
 					dw = dj.fs->winsect;
 					res = remove_chain(dj.fs, cl);
 					if (res == FR_OK) {
-						dj.fs->last_clust = cl - 1;	/* Reuse the cluster hole */
+						dj.fs->last_clust = cl - 1;	/* Reuse the cluster hole 寻找空簇机制*/
 						res = move_window(dj.fs, dw);
 					}
 				}
@@ -1564,10 +1560,10 @@ FRESULT f_open (
 		}
 		else {	/* Open an existing file */
 			if (res == FR_OK) {					/* Follow succeeded */
-				if (dir[DIR_Attr] & AM_DIR) {	/* It is a directory */
+				if (dir[DIR_Attr] & AM_DIR) {	/* It is a directory 目录*/
 					res = FR_NO_FILE;
 				} else {
-					if ((mode & FA_WRITE) && (dir[DIR_Attr] & AM_RDO)) /* R/O violation */
+					if ((mode & FA_WRITE) && (dir[DIR_Attr] & AM_RDO)) /* R/O violation 只读？*/
 						res = FR_DENIED;
 				}
 			}
@@ -1575,8 +1571,8 @@ FRESULT f_open (
 		if (res == FR_OK) {
 			if (mode & FA_CREATE_ALWAYS)		/* Set file change flag if created or overwritten */
 				mode |= FA__WRITTEN;
-			fp->dir_sect = dj.fs->winsect;		/* Pointer to the directory entry */
-			fp->dir_ptr = dir;
+			fp->dir_sect = dj.fs->winsect;		/* Pointer to the directory entry 把指针传递给文件结构*/
+			fp->dir_ptr = dir;/**/
 		}
 
 #else				/* R/O configuration */
@@ -1590,16 +1586,16 @@ FRESULT f_open (
 			}
 		}
 #endif
-		FREE_BUF();
+		FREE_BUF();//没用
 
 		if (res == FR_OK) {
-			fp->flag = mode;					/* File access mode */
-			fp->err = 0;						/* Clear error flag */
-			fp->sclust = ld_clust(dj.fs, dir);	/* File start cluster */
-			fp->fsize = LD_DWORD(dir+DIR_FileSize);	/* File size */
-			fp->fptr = 0;						/* File pointer */
+			fp->flag = mode;					/* File access mode 访问模式*/
+			fp->err = 0;						/* Clear error flag 成功*/
+			fp->sclust = ld_clust(dj.fs, dir);	/* File start cluster 起始簇*/
+			fp->fsize = LD_DWORD(dir+DIR_FileSize);	/* File size 大小*/
+			fp->fptr = 0;						/* File pointer 指针位置*/
 			fp->dsect = 0;
-			fp->fs = dj.fs;	 					/* Validate file object */
+			fp->fs = dj.fs;	 					/* Validate file object 所属系统*/
 			fp->id = fp->fs->id;
 		}
 	}
@@ -1611,7 +1607,7 @@ FRESULT f_open (
 
 
 /*-----------------------------------------------------------------------*/
-/* Read File                                                             */
+/* Read File     读文件                                                        */
 /*-----------------------------------------------------------------------*/
 
 FRESULT f_read (
@@ -1638,29 +1634,24 @@ FRESULT f_read (
 	remain = fp->fsize - fp->fptr;
 	if (btr > remain) btr = (UINT)remain;		/* Truncate btr by remaining bytes */
 
-	for ( ;  btr;								/* Repeat until all data read */
+	for ( ;  btr;								/* Repeat until all data read 重复循环直到文件读完*/
 		rbuff += rcnt, fp->fptr += rcnt, *br += rcnt, btr -= rcnt) {
-		if ((fp->fptr % SS(fp->fs)) == 0) {		/* On the sector boundary? */
+		if ((fp->fptr % SS(fp->fs)) == 0) {		/* On the sector boundary? 扇区边缘*/
 			csect = (BYTE)(fp->fptr / SS(fp->fs) & (fp->fs->csize - 1));	/* Sector offset in the cluster */
 			if (!csect) {						/* On the cluster boundary? */
 				if (fp->fptr == 0) {			/* On the top of the file? */
 					clst = fp->sclust;			/* Follow from the origin */
 				} else {						/* Middle or end of the file */
-#if _USE_FASTSEEK
-					if (fp->cltbl)
-						clst = clmt_clust(fp, fp->fptr);	/* Get cluster# from the CLMT */
-					else
-#endif
-						clst = get_fat(fp->fs, fp->clust);	/* Follow cluster chain on the FAT */
+						clst = get_fat(fp->fs, fp->clust);	/* Follow cluster chain on the FAT 进入下一个簇*/
 				}
 				if (clst < 2) ABORT(fp->fs, FR_INT_ERR);
 				if (clst == 0xFFFFFFFF) ABORT(fp->fs, FR_DISK_ERR);
-				fp->clust = clst;				/* Update current cluster */
+				fp->clust = clst;				/* Update current cluster 获得新的簇位置*/
 			}
-			sect = clust2sect(fp->fs, fp->clust);	/* Get current sector */
+			sect = clust2sect(fp->fs, fp->clust);	/* Get current sector 得到扇区位置*/
 			if (!sect) ABORT(fp->fs, FR_INT_ERR);
 			sect += csect;
-			cc = btr / SS(fp->fs);				/* When remaining bytes >= sector size, */
+			cc = btr / SS(fp->fs);				/* When remaining bytes >= sector size, 剩余大于扇区*/
 			if (cc) {							/* Read maximum contiguous sectors directly */
 				if (csect + cc > fp->fs->csize)	/* Clip at cluster boundary */
 					cc = fp->fs->csize - csect;
@@ -1681,7 +1672,7 @@ FRESULT f_read (
 #if !_FS_TINY
 			if (fp->dsect != sect) {			/* Load data sector if not in cache */
 #if !_FS_READONLY
-				if (fp->flag & FA__DIRTY) {		/* Write-back dirty sector cache */
+				if (fp->flag & FA__DIRTY) {		/* Write-back dirty sector cache 回写缓存*/
 					if (disk_write(fp->fs->drv, fp->buf, fp->dsect, 1))
 						ABORT(fp->fs, FR_DISK_ERR);
 					fp->flag &= ~FA__DIRTY;
@@ -1712,7 +1703,7 @@ FRESULT f_read (
 
 #if !_FS_READONLY
 /*-----------------------------------------------------------------------*/
-/* Write File                                                            */
+/* Write File           写 原理同上，稍作改变                                                 */
 /*-----------------------------------------------------------------------*/
 
 FRESULT f_write (
@@ -1749,11 +1740,7 @@ FRESULT f_write (
 					if (clst == 0)			/* When no cluster is allocated, */
 						clst = create_chain(fp->fs, 0);	/* Create a new cluster chain */
 				} else {					/* Middle or end of the file */
-#if _USE_FASTSEEK
-					if (fp->cltbl)
-						clst = clmt_clust(fp, fp->fptr);	/* Get cluster# from the CLMT */
-					else
-#endif
+
 						clst = create_chain(fp->fs, fp->clust);	/* Follow or stretch cluster chain on the FAT */
 				}
 				if (clst == 0) break;		/* Could not allocate a new cluster (disk full) */
@@ -1834,7 +1821,7 @@ FRESULT f_write (
 
 
 /*-----------------------------------------------------------------------*/
-/* Synchronize the File                                                  */
+/* Synchronize the File        清理文件结构缓存                                          */
 /*-----------------------------------------------------------------------*/
 
 FRESULT f_sync (
@@ -1861,15 +1848,15 @@ FRESULT f_sync (
 			res = move_window(fp->fs, fp->dir_sect);
 			if (res == FR_OK) {
 				dir = fp->dir_ptr;
-				dir[DIR_Attr] |= AM_ARC;					/* Set archive bit */
-				ST_DWORD(dir+DIR_FileSize, fp->fsize);		/* Update file size */
-				st_clust(dir, fp->sclust);					/* Update start cluster */
-				tm = get_fattime();							/* Update updated time */
+				dir[DIR_Attr] |= AM_ARC;					/* Set archive bit 属性*/
+				ST_DWORD(dir+DIR_FileSize, fp->fsize);		/* Update file size 大小*/
+				st_clust(dir, fp->sclust);					/* Update start cluster 起始簇*/
+				tm = get_fattime();							/* Update updated time 时间*/
 				ST_DWORD(dir+DIR_WrtTime, tm);
 				ST_WORD(dir+DIR_LstAccDate, 0);
 				fp->flag &= ~FA__WRITTEN;
 				fp->fs->wflag = 1;
-				res = sync_fs(fp->fs);
+				res = sync_fs(fp->fs);/*写入*/
 			}
 		}
 	}
@@ -1883,7 +1870,7 @@ FRESULT f_sync (
 
 
 /*-----------------------------------------------------------------------*/
-/* Close File                                                            */
+/* Close File                 关闭指针                                           */
 /*-----------------------------------------------------------------------*/
 
 FRESULT f_close (
@@ -1894,7 +1881,7 @@ FRESULT f_close (
 
 
 #if !_FS_READONLY
-	res = f_sync(fp);					/* Flush cached data */
+	res = f_sync(fp);					/* Flush cached data 写入缓存*/
 	if (res == FR_OK)
 #endif
 	{
@@ -1903,14 +1890,8 @@ FRESULT f_close (
 #if _FS_REENTRANT
 			FATFS *fs = fp->fs;
 #endif
-#if _FS_LOCK
-			res = dec_lock(fp->lockid);	/* Decrement file open counter */
-			if (res == FR_OK)
-#endif
-				fp->fs = 0;				/* Invalidate file object */
-#if _FS_REENTRANT
-			unlock_fs(fs, FR_OK);		/* Unlock volume */
-#endif
+
+				fp->fs = 0;				/* Invalidate file object 标记结构无效*/
 		}
 	}
 	return res;
@@ -1923,139 +1904,11 @@ FRESULT f_close (
 /* Change Current Directory or Current Drive, Get Current Directory      */
 /*-----------------------------------------------------------------------*/
 
-#if _FS_RPATH >= 1
-#if _VOLUMES >= 2
-FRESULT f_chdrive (
-	const TCHAR* path		/* Drive number */
-)
-{
-	int vol;
-
-
-	vol = get_ldnumber(&path);
-	if (vol < 0) return FR_INVALID_DRIVE;
-
-	CurrVol = (BYTE)vol;
-
-	return FR_OK;
-}
-#endif
-
-
-FRESULT f_chdir (
-	const TCHAR* path	/* Pointer to the directory path */
-)
-{
-	FRESULT res;
-	DIR dj;
-	DEF_NAMEBUF;
-
-
-	/* Get logical drive number */
-	res = find_volume(&dj.fs, &path, 0);
-	if (res == FR_OK) {
-		INIT_BUF(dj);
-		res = follow_path(&dj, path);		/* Follow the path */
-		FREE_BUF();
-		if (res == FR_OK) {					/* Follow completed */
-			if (!dj.dir) {
-				dj.fs->cdir = dj.sclust;	/* Start directory itself */
-			} else {
-				if (dj.dir[DIR_Attr] & AM_DIR)	/* Reached to the directory */
-					dj.fs->cdir = ld_clust(dj.fs, dj.dir);
-				else
-					res = FR_NO_PATH;		/* Reached but a file */
-			}
-		}
-		if (res == FR_NO_FILE) res = FR_NO_PATH;
-	}
-
-	LEAVE_FF(dj.fs, res);
-}
-
-
-#if _FS_RPATH >= 2
-FRESULT f_getcwd (
-	TCHAR* buff,	/* Pointer to the directory path */
-	UINT len		/* Size of path */
-)
-{
-	FRESULT res;
-	DIR dj;
-	UINT i, n;
-	DWORD ccl;
-	TCHAR *tp;
-	FILINFO fno;
-	DEF_NAMEBUF;
-
-
-	*buff = 0;
-	/* Get logical drive number */
-	res = find_volume(&dj.fs, (const TCHAR**)&buff, 0);	/* Get current volume */
-	if (res == FR_OK) {
-		INIT_BUF(dj);
-		i = len;			/* Bottom of buffer (directory stack base) */
-		dj.sclust = dj.fs->cdir;			/* Start to follow upper directory from current directory */
-		while ((ccl = dj.sclust) != 0) {	/* Repeat while current directory is a sub-directory */
-			res = dir_sdi(&dj, 1);			/* Get parent directory */
-			if (res != FR_OK) break;
-			res = dir_read(&dj, 0);
-			if (res != FR_OK) break;
-			dj.sclust = ld_clust(dj.fs, dj.dir);	/* Goto parent directory */
-			res = dir_sdi(&dj, 0);
-			if (res != FR_OK) break;
-			do {							/* Find the entry links to the child directory */
-				res = dir_read(&dj, 0);
-				if (res != FR_OK) break;
-				if (ccl == ld_clust(dj.fs, dj.dir)) break;	/* Found the entry */
-				res = dir_next(&dj, 0);	
-			} while (res == FR_OK);
-			if (res == FR_NO_FILE) res = FR_INT_ERR;/* It cannot be 'not found'. */
-			if (res != FR_OK) break;
-#if _USE_LFN
-			fno.lfname = buff;
-			fno.lfsize = i;
-#endif
-			get_fileinfo(&dj, &fno);		/* Get the directory name and push it to the buffer */
-			tp = fno.fname;
-#if _USE_LFN
-			if (*buff) tp = buff;
-#endif
-			for (n = 0; tp[n]; n++) ;
-			if (i < n + 3) {
-				res = FR_NOT_ENOUGH_CORE; break;
-			}
-			while (n) buff[--i] = tp[--n];
-			buff[--i] = '/';
-		}
-		tp = buff;
-		if (res == FR_OK) {
-#if _VOLUMES >= 2
-			*tp++ = '0' + CurrVol;			/* Put drive number */
-			*tp++ = ':';
-#endif
-			if (i == len) {					/* Root-directory */
-				*tp++ = '/';
-			} else {						/* Sub-directroy */
-				do		/* Add stacked path str */
-					*tp++ = buff[i++];
-				while (i < len);
-			}
-		}
-		*tp = 0;
-		FREE_BUF();
-	}
-
-	LEAVE_FF(dj.fs, res);
-}
-#endif /* _FS_RPATH >= 2 */
-#endif /* _FS_RPATH >= 1 */
-
 
 
 #if _FS_MINIMIZE <= 2
 /*-----------------------------------------------------------------------*/
-/* Seek File R/W Pointer                                                 */
+/* Seek File R/W Pointer          文件指针移动                                       */
 /*-----------------------------------------------------------------------*/
 
 FRESULT f_lseek (
@@ -2071,63 +1924,6 @@ FRESULT f_lseek (
 	if (fp->err)						/* Check error */
 		LEAVE_FF(fp->fs, (FRESULT)fp->err);
 
-#if _USE_FASTSEEK
-	if (fp->cltbl) {	/* Fast seek */
-		DWORD cl, pcl, ncl, tcl, dsc, tlen, ulen, *tbl;
-
-		if (ofs == CREATE_LINKMAP) {	/* Create CLMT */
-			tbl = fp->cltbl;
-			tlen = *tbl++; ulen = 2;	/* Given table size and required table size */
-			cl = fp->sclust;			/* Top of the chain */
-			if (cl) {
-				do {
-					/* Get a fragment */
-					tcl = cl; ncl = 0; ulen += 2;	/* Top, length and used items */
-					do {
-						pcl = cl; ncl++;
-						cl = get_fat(fp->fs, cl);
-						if (cl <= 1) ABORT(fp->fs, FR_INT_ERR);
-						if (cl == 0xFFFFFFFF) ABORT(fp->fs, FR_DISK_ERR);
-					} while (cl == pcl + 1);
-					if (ulen <= tlen) {		/* Store the length and top of the fragment */
-						*tbl++ = ncl; *tbl++ = tcl;
-					}
-				} while (cl < fp->fs->n_fatent);	/* Repeat until end of chain */
-			}
-			*fp->cltbl = ulen;	/* Number of items used */
-			if (ulen <= tlen)
-				*tbl = 0;		/* Terminate table */
-			else
-				res = FR_NOT_ENOUGH_CORE;	/* Given table size is smaller than required */
-
-		} else {						/* Fast seek */
-			if (ofs > fp->fsize)		/* Clip offset at the file size */
-				ofs = fp->fsize;
-			fp->fptr = ofs;				/* Set file pointer */
-			if (ofs) {
-				fp->clust = clmt_clust(fp, ofs - 1);
-				dsc = clust2sect(fp->fs, fp->clust);
-				if (!dsc) ABORT(fp->fs, FR_INT_ERR);
-				dsc += (ofs - 1) / SS(fp->fs) & (fp->fs->csize - 1);
-				if (fp->fptr % SS(fp->fs) && dsc != fp->dsect) {	/* Refill sector cache if needed */
-#if !_FS_TINY
-#if !_FS_READONLY
-					if (fp->flag & FA__DIRTY) {		/* Write-back dirty sector cache */
-						if (disk_write(fp->fs->drv, fp->buf, fp->dsect, 1))
-							ABORT(fp->fs, FR_DISK_ERR);
-						fp->flag &= ~FA__DIRTY;
-					}
-#endif
-					if (disk_read(fp->fs->drv, fp->buf, dsc, 1))	/* Load current sector */
-						ABORT(fp->fs, FR_DISK_ERR);
-#endif
-					fp->dsect = dsc;
-				}
-			}
-		}
-	} else
-#endif
-
 	/* Normal Seek */
 	{
 		DWORD clst, bcs, nsect, ifptr;
@@ -2141,16 +1937,16 @@ FRESULT f_lseek (
 		ifptr = fp->fptr;
 		fp->fptr = nsect = 0;
 		if (ofs) {
-			bcs = (DWORD)fp->fs->csize * SS(fp->fs);	/* Cluster size (byte) */
+			bcs = (DWORD)fp->fs->csize * SS(fp->fs);	/* Cluster size (byte) 簇大小（512）*/
 			if (ifptr > 0 &&
-				(ofs - 1) / bcs >= (ifptr - 1) / bcs) {	/* When seek to same or following cluster, */
+				(ofs - 1) / bcs >= (ifptr - 1) / bcs) {	/* When seek to same or following cluster, 在同一个簇*/
 				fp->fptr = (ifptr - 1) & ~(bcs - 1);	/* start from the current cluster */
 				ofs -= fp->fptr;
 				clst = fp->clust;
 			} else {									/* When seek to back cluster, */
-				clst = fp->sclust;						/* start from the first cluster */
+				clst = fp->sclust;						/* start from the first cluster 起始簇*/
 #if !_FS_READONLY
-				if (clst == 0) {						/* If no cluster chain, create a new chain */
+				if (clst == 0) {						/* If no cluster chain, create a new chain 怎么会没有？文件未分配链*/
 					clst = create_chain(fp->fs, 0);
 					if (clst == 1) ABORT(fp->fs, FR_INT_ERR);
 					if (clst == 0xFFFFFFFF) ABORT(fp->fs, FR_DISK_ERR);
@@ -2162,14 +1958,14 @@ FRESULT f_lseek (
 			if (clst != 0) {
 				while (ofs > bcs) {						/* Cluster following loop */
 #if !_FS_READONLY
-					if (fp->flag & FA_WRITE) {			/* Check if in write mode or not */
-						clst = create_chain(fp->fs, clst);	/* Force stretch if in write mode */
-						if (clst == 0) {				/* When disk gets full, clip file size */
+					if (fp->flag & FA_WRITE) {			/* Check if in write mode or not 文件是否可写*/
+						clst = create_chain(fp->fs, clst);	/* Force stretch if in write mode 延长文件链*/
+						if (clst == 0) {				/* When disk gets full, clip file size 写满了不写了*/
 							ofs = bcs; break;
 						}
 					} else
 #endif
-						clst = get_fat(fp->fs, clst);	/* Follow cluster chain if not in write mode */
+						clst = get_fat(fp->fs, clst);	/* Follow cluster chain if not in write mode 只读*/
 					if (clst == 0xFFFFFFFF) ABORT(fp->fs, FR_DISK_ERR);
 					if (clst <= 1 || clst >= fp->fs->n_fatent) ABORT(fp->fs, FR_INT_ERR);
 					fp->clust = clst;
@@ -2187,19 +1983,19 @@ FRESULT f_lseek (
 		if (fp->fptr % SS(fp->fs) && nsect != fp->dsect) {	/* Fill sector cache if needed */
 #if !_FS_TINY
 #if !_FS_READONLY
-			if (fp->flag & FA__DIRTY) {			/* Write-back dirty sector cache */
+			if (fp->flag & FA__DIRTY) {			/* Write-back dirty sector cache 处理缓存*/
 				if (disk_write(fp->fs->drv, fp->buf, fp->dsect, 1))
 					ABORT(fp->fs, FR_DISK_ERR);
 				fp->flag &= ~FA__DIRTY;
 			}
 #endif
-			if (disk_read(fp->fs->drv, fp->buf, nsect, 1))	/* Fill sector cache */
+			if (disk_read(fp->fs->drv, fp->buf, nsect, 1))	/* Fill sector cache 读取内容*/
 				ABORT(fp->fs, FR_DISK_ERR);
 #endif
 			fp->dsect = nsect;
 		}
 #if !_FS_READONLY
-		if (fp->fptr > fp->fsize) {			/* Set file change flag if the file size is extended */
+		if (fp->fptr > fp->fsize) {			/* Set file change flag if the file size is extended 标记文件改变*/
 			fp->fsize = fp->fptr;
 			fp->flag |= FA__WRITTEN;
 		}
@@ -2213,7 +2009,7 @@ FRESULT f_lseek (
 
 #if _FS_MINIMIZE <= 1
 /*-----------------------------------------------------------------------*/
-/* Create a Directory Object                                             */
+/* Create a Directory Object     打开目录                                        */
 /*-----------------------------------------------------------------------*/
 
 FRESULT f_opendir (
@@ -3034,7 +2830,7 @@ FRESULT f_forward (
 
 #if _USE_MKFS && !_FS_READONLY
 /*-----------------------------------------------------------------------*/
-/* Create File System on the Drive    格式化                            */
+/* Create File System on the Drive    格式化,懒得搞了，直接用现成的vhd                            */
 /*-----------------------------------------------------------------------*/
 #define N_ROOTDIR	512		/* Number of root directory entries for FAT12/16 根目录项目数*/
 #define N_FATS		1		/* Number of FAT copies (1 or 2) fat数*/
@@ -3280,7 +3076,7 @@ FRESULT f_mkfs (
 
 #if _MULTI_PARTITION
 /*-----------------------------------------------------------------------*/
-/* Divide Physical Drive                                                 */
+/* Divide Physical Drive       分区不写了T T                                          */
 /*-----------------------------------------------------------------------*/
 
 FRESULT f_fdisk (
@@ -3350,7 +3146,7 @@ FRESULT f_fdisk (
 
 
 
-
+/*字符串也不写了T T*/
 #if _USE_STRFUNC
 /*-----------------------------------------------------------------------*/
 /* Get a string from the file                                            */

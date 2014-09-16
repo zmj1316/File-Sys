@@ -124,12 +124,7 @@ typedef struct {
 	DWORD	dir_sect;		/* Sector number containing the directory entry 目录记录所在扇区*/
 	BYTE*	dir_ptr;		/* Pointer to the directory entry in the win[] */
 #endif
-#if _USE_FASTSEEK
-	DWORD*	cltbl;			/* Pointer to the cluster link map table (Nulled on file open) */
-#endif
-#if _FS_LOCK
-	UINT	lockid;			/* File lock ID origin from 1 (index of file semaphore table Files[]) */
-#endif
+
 #if !_FS_TINY
 	BYTE	buf[_MAX_SS];	/* File private data read/write window 读写缓存*/
 #endif
