@@ -1586,7 +1586,7 @@ FRESULT f_open (
 			}
 		}
 #endif
-		FREE_BUF();//没用
+		FREE_BUF();/*没用*/
 
 		if (res == FR_OK) {
 			fp->flag = mode;					/* File access mode 访问模式*/

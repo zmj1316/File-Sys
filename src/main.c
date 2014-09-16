@@ -11,9 +11,9 @@ const TCHAR HelpStr[] =
 " ds <pd#> - Show disk status\n"
 "[Buffer contorls]\n"
 "[File system contorls]\n"
-"fi[ld#]<mount>\n"
-" fl [<path>] - Show a directory\n"
-"fc[Filename] - creat a file\n"
+"fi[ld#]<mount> exp: fi00\n"
+" fl [<path>] - Show a directory exp: fl\n"
+"fc[Filename] - creat a file exp fc1.txt\n"
 
 ;
 
@@ -159,7 +159,8 @@ void main (void)
     DIR dir;                /* Directory object */
     FIL file[2];            /* File objects */
     FILINFO fno;
-
+    printf("Welcome !\n Type q to quit ? to get help! \n Don't use space between command and arguments!\n It's Important so I must repeat!\n");
+    
     while(1){
         ptr=cmd;
         printf(">");
@@ -253,7 +254,7 @@ void main (void)
                 case 'f':
                     
                 }
-
+            default: printf("What Hell Are You Doing?! \nJust Type '?' \n");
 
         }
     }
