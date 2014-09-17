@@ -2799,10 +2799,9 @@ void xput(DIR* dp,char * ptr){
     BYTE idx=0;
     int count=0;
     char * fn=ptr;
-    disk_read(0,buff,dp->sclust,1);
+    disk_read(0,buff,clust2sect(dp->fs,dp->sclust),1);
     tar=fopen(fn,"rb");
     remain=size=getsize(fn);
-
     for(count=0;count<8&&*ptr;count++){
         if (*ptr>47&&*ptr<58||*ptr>=65&&*ptr<=90||*ptr>=97&&*ptr<=122)
             if(*ptr>=97&&*ptr<=122)
@@ -2839,11 +2838,7 @@ void xput(DIR* dp,char * ptr){
         if(buff[32*idx]==0) break;
 
         else idx++;
-        if (idx*32>512){
-        	ofsect++;
-        	disk_read(0,buff,get_fat(dp->fs,dp->sclust),1);
-        	idx=0;
-        }
+
     }
     memcpy(buff+32*idx,name,11);
     buff[32*idx+11]=0x20;
@@ -2864,7 +2859,7 @@ void xput(DIR* dp,char * ptr){
     ST_DWORD(32*idx+buff+28,size);
     ST_WORD(32*idx+buff+26,fsect);
     printf("%lx\n",buff+28 );
-    disk_write(0,buff,dp->sclust+ofsect,1);
+    disk_write(0,buff,clust2sect(dp->fs,dp->sclust),1);
 }
 void mkdir(FATFS* fs,char * ptr){
     BYTE buff[512];

@@ -86,7 +86,7 @@ void xcopy(DIR * dp,char * ptr){/*从磁盘根目录中读取文件到外部*/
     char * fn;
     int i=0,count =0;
     char a[50]="data-";
-    disk_read(0,buff,clust2sect(dp->fs,dp->sclust),1);
+    disk_read(0,buff,dp->sclust+dp->fs->database,1);
     for(count=0;count<8&&*ptr;count++){
         if (*ptr>47&&*ptr<58||*ptr>=65&&*ptr<=90||*ptr>=97&&*ptr<=122)
             if(*ptr>=97&&*ptr<=122)
@@ -115,16 +115,22 @@ void xcopy(DIR * dp,char * ptr){/*从磁盘根目录中读取文件到外部*/
     while(1){
              
         if (!memcmp(buff+32*idx,name,11)) {
-            printf("File  Found!\n");
-            break;
+            fclose(tar);
+            
+            printf("File '%s' Found!\n",fn);
+            return 1;
         }
- 
+        if(buff[32*idx]==0) break;
         else idx++;
+        if (idx*32>512){
+            ofsect++;
+            disk_read(0,buff,get_fat(dp->fs,dp->sclust),1);
+            idx=0;
+        }
     }
     fsect=LD_WORD(buff+26+32*idx);
     remain=size=LD_DWORD(buff+28+32*idx);
     fn=buff+32*idx;
-    count=0;
     for(i=0;i<8;i++){
         if (*(fn+i)!=' ')
             name[count++]=*(fn+i);
@@ -468,3 +474,4 @@ void main (void)
     return;
 
 }
+,
