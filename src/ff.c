@@ -2783,21 +2783,23 @@ FRESULT f_mkfs (
 }
 
 
+
 /*----------------------------------------------------------------------*/
 /*My New Functions*/
-void xput(FATFS* fs,char * ptr){
+/*从外部复制文件进磁盘目录*/
+void xput(DIR* dp,char * ptr){
     BYTE buff[512];
     BYTE file[512];
     BYTE name[15];
     BYTE ofsect=0;
-    DWORD ofs=fs->dirbase;
+    DWORD ofs=dp->fs->dirbase;
     WORD fsect,dsect;
     DWORD size,remain;
     FILE *tar;
-    BYTE idx=0,count=0;
+    BYTE idx=0;
+    int count=0;
     char * fn=ptr;
-    disk_read(0,buff,fs->dirbase,1);
-
+    disk_read(0,buff,dp->sclust,1);
     tar=fopen(fn,"rb");
     remain=size=getsize(fn);
 
@@ -2839,27 +2841,30 @@ void xput(FATFS* fs,char * ptr){
         else idx++;
         if (idx*32>512){
         	ofsect++;
-        	disk_read(0,buff,fs->dirbase+ofsect,1);
+        	disk_read(0,buff,get_fat(dp->fs,dp->sclust),1);
+        	idx=0;
         }
     }
     memcpy(buff+32*idx,name,11);
     buff[32*idx+11]=0x20;
-    dsect=fsect=create_chain(fs,0);
+    dsect=fsect=create_chain(dp->fs,0);
     while(remain>512){
-        fseek(tar,size-remain,0);
         fread(file,512,1,tar);
-        disk_write(0,file,fs->database+dsect-2,1);
-        dsect=create_chain(fs,dsect);
+        disk_write(0,file,dp->fs->database+dsect-2,1);
+        dsect=create_chain(dp->fs,dsect);
         remain-=512;
+        /*fseek(tar,512,SEEK_CUR);*/
     }
-    fseek(tar,size-remain,0);
-    fread(file,size-remain,1,tar);
-    disk_write(0,file,fs->database+dsect-2,1);
+    fread(file,remain,1,tar);
+    for (count=remain+1;count<512;count++){
+    	*(file+remain)=0;
+    }
+    disk_write(0,file,dp->fs->database+dsect-2,1);
     ST_DWORD(32*idx+buff+22,get_fattime());
     ST_DWORD(32*idx+buff+28,size);
     ST_WORD(32*idx+buff+26,fsect);
     printf("%lx\n",buff+28 );
-    disk_write(0,buff,fs->dirbase+ofsect,1);
+    disk_write(0,buff,dp->sclust+ofsect,1);
 }
 void mkdir(FATFS* fs,char * ptr){
     BYTE buff[512];

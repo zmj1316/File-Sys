@@ -4,6 +4,7 @@
 #include <locale.h>
 #include "diskio.h"
 #include "ff.h"
+
 const TCHAR HelpStr[] =
 "[Disk contorls]\n" 
 " di <pd#> - Initialize disk\n"
@@ -48,7 +49,73 @@ BYTE Buff[262144];          /* 缓存 */
                                ^    5th call returns 255 and next ptr
                                   ^ 6th call fails and returns 0
 */
+DWORD getsize(char * fn){
+    DWORD count=0;
+    FILE *fp;
+    fp=fopen(fn,"rb+");
+    while(!feof(fp)){
+        fgetc(fp);
+        count++;
+    }
+    fclose(fp);
+    return count;
+}                                  
 
+void xcopy(BYTE idx){/*从磁盘根目录中读取文件到外部*/
+    BYTE buff[512];
+    DWORD ofs=FatFs[0].dirbase;
+    WORD fsect,dsect;
+    DWORD size,remain;
+    FILE *tar;
+    FILE *fp;
+
+    disk_read(0,buff,FatFs[0].dirbase,1);
+    fsect=LD_WORD(buff+26+32*idx);
+    remain=size=LD_DWORD(buff+28+32*idx);
+    printf("%lx\n", fsect);
+    getch();
+    tar=fopen("target","wb+");
+    fp=fopen("0.img","rb+");
+    dsect=fsect;
+    while(remain>512){
+        disk_read(0,buff,FatFs[0].database+dsect-2,1);
+        printf("%lx\n", dsect);
+        fseek(tar,size-remain,0);
+        printf("%lx\n",size-remain );
+        fwrite(buff,512,1,tar);
+        dsect=get_fat(&FatFs[0],dsect);
+        remain-=512;
+    }
+    disk_read(0,buff,FatFs[0].database+dsect-2,1);
+    fseek(tar,size-remain,0);
+    printf("%lx\n",size-remain );
+    fwrite(buff,remain,1,tar);
+    fclose(tar);
+
+}
+void xprint(BYTE idx){
+    BYTE buff[512];
+    FILE *fp;
+    DWORD ofs=FatFs[0].dirbase;
+    DWORD fsect,dsect;
+    printf("%lx\n",ofs);
+    fp=fopen("0.img","rb+");
+    disk_read(0,buff,FatFs[0].dirbase,1);
+    fsect=LD_WORD(buff+26+32*idx);
+    disk_read(0,buff,FatFs[0].database+fsect-2,1);
+    buff[511]=0;
+    printf("%s\n",buff);
+    getch();
+    dsect=get_fat(&FatFs[0],fsect);
+        getch();
+    fseek(fp,(FatFs[0].database+dsect-1)*512,0);
+        getch();
+    fread(buff,512,1,fp);
+        getch();
+    buff[511]=0;
+    printf("%s\n",buff);
+    fclose(fp);
+}
 int xatoi (         /* 0:Failed, 1:Successful */
     TCHAR **str,    /* Pointer to pointer to the string */
     long *res       /* Pointer to a valiable to store the value */
@@ -163,10 +230,11 @@ void main (void)
     
     while(1){
         ptr=cmd;
+        f_opendir(&dir,"/");
         printf(">");
         scanf("%s",ptr);
         switch (*ptr++){
-            case 'q': return 0;
+            case 'q': return 0; 
             case '?': printf("%s\n",HelpStr ); break;
             case 'd':  /* Disk I/O command */
                 switch (*ptr++) {   /* 第二个指令 */
@@ -201,7 +269,9 @@ void main (void)
                         printf("Sector size = %u\n", w);
                     if (disk_ioctl((BYTE)p1, GET_SECTOR_COUNT, &dw) == RES_OK)
                         printf("Number of sectors = %u\n", dw);
+                    break;
                 }
+                break;
 
             case 'f' :  /* FatFs test command */
                 switch (*ptr++) {   /* Branch by secondary command character */
@@ -213,7 +283,6 @@ void main (void)
                     printf("%d\n",res );
                     break;
                 case 'l':
-                    f_opendir(&dir,"/");
                     while(1){
                         f_readdir(&dir,&fno);
                         if (dir.sect){
@@ -234,11 +303,14 @@ void main (void)
                 case 'r':
                     f_unlink(ptr);
                     break;
+                case 'm':
+                    f_mkdir(ptr);
+                    break;
+                break;
                 }
             case 'l':
                 switch (*ptr++){
                 case 'l':
-                    f_opendir(&dir,"/");
                     while(1){
                         f_readdir(&dir,&fno);
                         if (dir.sect){
@@ -251,21 +323,51 @@ void main (void)
                             break;
                     }
                     break;
-                case 'f':
+                case 'f': break;
                     
                 }
-            //default: printf("What Hell Are You Doing?! \nJust Type '?' \n");
+                break;
+            case 't': 
+                /*xprint(0);*/
+                /*xput(&FatFs[0],"ff.c");*/
+                mkdir(&FatFs[0],"ff");
+                break;
+            case 'c':
+                switch (*ptr++){
+                    case 'd': 
+
+                        printf("%d\n",f_opendir(&dir,ptr));
+                        printf("%x\n%x\n%s\n",dir.sclust,dir.clust, dir.fn);
+                        while(1){
+                        f_readdir(&dir,&fno);
+                        if (dir.sect){
+                            if (fno.fattrib==16)
+
+                                printf("%s\\ ", fno.fname);
+                            else
+                                printf("%s ", fno.fname);
+                            printf("       sector:%d size:%d \n",dir.sect ,fno.fsize);
+                        }
+                        else
+                            break;
+                    }
+                        break;
+                }
+                break;
+            case 'x':
+                switch(*ptr++){
+                    case 'i': xput(&FatFs[0],ptr); break;
+                }
+                break;
 
         }
     }
-    /* 为逻辑驱动器注册工作区 */
-    printf("%d\n",f_mount(&fs[0],"",1));
-    printf("%d\n",f_mkfs("",0,0) );
-    getch();
-    printf("%d\n",f_mkdir("test"));
-    printf("%d\n",f_mkdir("test\\test1"));
-    f_open(&f1, "message.txt", FA_CREATE_NEW);
-    printf("%d\n",f_mkdir("test2"));
-    return;
-
-}
+    /* 为逻辑驱动器注册工作区  fno.fname);
+                            printf("       sector:%d size:%d \n",dir.sect ,fno.fsize);
+                        }
+                        else
+                            break;
+                    }
+                        break;
+                }
+              

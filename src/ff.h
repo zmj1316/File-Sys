@@ -143,13 +143,7 @@ typedef struct {
 	DWORD	sect;			/* Current sector */
 	BYTE*	dir;			/* Pointer to the current SFN entry in the win[] 缓存中的目录指针*/
 	BYTE*	fn;				/* Pointer to the SFN (in/out) {file[8],ext[3],status[1]} 缓存中的文件名指针*/
-#if _FS_LOCK
-	UINT	lockid;			/* File lock ID (index of file semaphore table Files[]) */
-#endif
-#if _USE_LFN
-	WCHAR*	lfn;			/* Pointer to the LFN working buffer */
-	WORD	lfn_idx;		/* Last matched LFN index number (0xFFFF:No LFN) */
-#endif
+
 } DIR;
 
 
