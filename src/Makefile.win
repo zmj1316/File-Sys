@@ -1,18 +1,18 @@
 # Project: 工程1
 # Makefile created by Dev-C++ 4.9.9.1
 
-CPP  = g++.exe -D__DEBUG__
-CC   = gcc.exe -D__DEBUG__
+CPP  = g++.exe
+CC   = gcc.exe
 WINDRES = windres.exe
 RES  = 
 OBJ  = diskio.o ff.o main.o $(RES)
 LINKOBJ  = diskio.o ff.o main.o $(RES)
-LIBS =  -L"d:/Dev-Cpp/lib"  -g3 
-INCS =  -I"d:/Dev-Cpp/include"  -I"C:/Users/lenovo/Desktop/File-Sys/src" 
-CXXINCS =  -I"d:/Dev-Cpp/include/c++/3.3.1"  -I"d:/Dev-Cpp/include/c++/3.3.1/mingw32"  -I"d:/Dev-Cpp/include/c++/3.3.1/backward"  -I"d:/Dev-Cpp/lib/gcc-lib/mingw32/3.3.1/include"  -I"d:/Dev-Cpp/include"  -I"C:/Users/lenovo/Desktop/File-Sys/src" 
+LIBS =  -L"C:/Users/SC/Desktop/Dev-Cpp/lib"  
+INCS =  -I"C:/Users/SC/Desktop/Dev-Cpp/include" 
+CXXINCS =  -I"C:/Users/SC/Desktop/Dev-Cpp/include/c++/3.3.1"  -I"C:/Users/SC/Desktop/Dev-Cpp/include/c++/3.3.1/mingw32"  -I"C:/Users/SC/Desktop/Dev-Cpp/include/c++/3.3.1/backward"  -I"C:/Users/SC/Desktop/Dev-Cpp/lib/gcc-lib/mingw32/3.3.1/include"  -I"C:/Users/SC/Desktop/Dev-Cpp/include" 
 BIN  = 工程1.exe
-CXXFLAGS = $(CXXINCS)   -ansi -w -g3
-CFLAGS = $(INCS)   -ansi -w -g3
+CXXFLAGS = $(CXXINCS)   -ansi -w
+CFLAGS = $(INCS)   -ansi -w
 
 .PHONY: all all-before all-after clean clean-custom
 
