@@ -348,6 +348,7 @@ void main (void)
     FIL file[2];            /* File objects */
     FILINFO fno;
     system("color f1");  
+    system("diskmgmt.msc");
     printf("%s\n", Draw);
     printf("»¶Ó­Ê¹ÓÃ !\n ÍË³ö:'q' \n °ïÖú:'?'\n");
     f_opendir(&dir,"/");
