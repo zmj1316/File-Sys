@@ -61,7 +61,6 @@ DWORD getsize(char * fn){
     return count;
 }                                  
 
-
 void xcopy(BYTE idx){
     BYTE buff[512];
     DWORD ofs=FatFs[0].dirbase;
@@ -231,6 +230,7 @@ void main (void)
     
     while(1){
         ptr=cmd;
+        f_opendir(&dir,"/");
         printf(">");
         scanf("%s",ptr);
         switch (*ptr++){
@@ -283,7 +283,6 @@ void main (void)
                     printf("%d\n",res );
                     break;
                 case 'l':
-                    f_opendir(&dir,"/");
                     while(1){
                         f_readdir(&dir,&fno);
                         if (dir.sect){
@@ -328,7 +327,8 @@ void main (void)
                 break;
             case 't': 
                 /*xprint(0);*/
-                xput(&FatFs[0],"ff.c");
+                /*xput(&FatFs[0],"ff.c");*/
+                mkdir(&FatFs[0],"ff");
                 break;
 
         }
