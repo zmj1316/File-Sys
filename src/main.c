@@ -62,7 +62,6 @@ DWORD getsize(char * fn){
 }                                  
 
 
-                                  
 void xcopy(BYTE idx){
     BYTE buff[512];
     DWORD ofs=FatFs[0].dirbase;

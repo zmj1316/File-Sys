@@ -120,7 +120,7 @@ Copyright (C) 2014, ChaN, all right reserved.*/
 #include "ff.h"			/* Declarations of FatFs API */
 #include "diskio.h"		/* Declarations of disk I/O functions */
 #include <stdio.h>/*外部文件读写*/
-
+#include <string.h>
 
 /*--------------------------------------------------------------------------
 
@@ -3447,10 +3447,12 @@ int f_printf (
 
 #endif /* !_FS_READONLY */
 #endif /* _USE_STRFUNC */
+/*----------------------------------------------------------------------*/
 /*My New Functions*/
 void xput(FATFS* fs,char * ptr){
     BYTE buff[512];
     BYTE file[512];
+    BYTE name[15];
     DWORD ofs=fs->dirbase;
     WORD fsect,dsect;
     DWORD size,remain;
@@ -3458,31 +3460,48 @@ void xput(FATFS* fs,char * ptr){
     BYTE idx=0,count=0;
     char * fn=ptr;
     disk_read(0,buff,fs->dirbase,1);
-    tar=fopen(fn,"rb+");
+
+    tar=fopen(fn,"rb");
     remain=size=getsize(fn);
-    while(1){
-        if(buff[32*idx]==0) break;
-        else idx++;
-    }
+
     for(count=0;count<8&&*ptr;count++){
         if (*ptr>47&&*ptr<58||*ptr>=65&&*ptr<=90||*ptr>=97&&*ptr<=122)
             if(*ptr>=97&&*ptr<=122)
-                buff[32*idx+count]=*ptr-32;
+                name[count]=*ptr-32;
             else
-                buff[32*idx+count]=*ptr;
+                name[count]=*ptr;
         else
             if (*(ptr++)=='.')
                 break;
         ptr++;
     }
+    for(;count<8;count++){
+    	name[count]=' ';
+    }
     for(count=0;count<3&&*ptr;count++){
         if (*ptr>47&&*ptr<58||*ptr>=65&&*ptr<=90||*ptr>=97&&*ptr<=122)
             if(*ptr>=97&&*ptr<=122)
-                buff[32*idx+count+8]=*ptr-32;
+                name[count+8]=*ptr-32;
             else
-                buff[32*idx+count+8]=*ptr;
+                name[count+8]=*ptr;
         ptr++;
     }
+    for(;count<3;count++){
+    	name[count+8]=' ';
+    }
+    while(1){
+             
+    	if (!memcmp(buff+32*idx,name,11)) {
+    		fclose(tar);
+    		
+    		printf("There has been a File %s!\n",fn);
+    		return 1;
+    	}
+        if(buff[32*idx]==0) break;
+
+        else idx++;
+    }
+    memcpy(buff+32*idx,name,11);
     buff[32*idx+11]=0x20;
     dsect=fsect=create_chain(fs,0);
     while(remain>512){
@@ -3500,4 +3519,73 @@ void xput(FATFS* fs,char * ptr){
     ST_WORD(32*idx+buff+26,fsect);
     printf("%lx\n",buff+28 );
     disk_write(0,buff,fs->dirbase,1);
+}
+static
+FRESULT get_name (
+	DIR* dp,			/* Pointer to the directory object */
+	const TCHAR** path	/* Pointer to pointer to the segment in the path string */
+)
+{
+
+
+	BYTE b, c, d, *sfn;
+	UINT ni, si, i;
+	const char *p;
+
+	/* Create file name in directory form */
+	for (p = *path; *p == '/' || *p == '\\'; p++) ;	/* Strip duplicated separator */
+	sfn = dp->fn;
+	mem_set(sfn, ' ', 11);
+	si = i = b = 0; ni = 8;
+	for (;;) {
+		c = (BYTE)p[si++];
+		if (c <= ' ' || c == '/' || c == '\\') break;	/* Break on end of segment */
+		if (c == '.' || i >= ni) {
+			if (ni != 8 || c != '.') return FR_INVALID_NAME;
+			i = 8; ni = 11;
+			b <<= 2; continue;
+		}
+		if (c >= 0x80) {				/* Extended character? 超出范围*/
+			b |= 3;						/* Eliminate NT flag */
+#ifdef _EXCVT
+			c = ExCvt[c - 0x80];		/* To upper extended characters (SBCS cfg) */
+#else
+#if !_DF1S
+			return FR_INVALID_NAME;		/* Reject extended characters (ASCII cfg) */
+#endif
+#endif
+		}
+		if (IsDBCS1(c)) {				/* Check if it is a DBC 1st byte (always false on SBCS cfg) */
+			d = (BYTE)p[si++];			/* Get 2nd byte */
+			if (!IsDBCS2(d) || i >= ni - 1)	/* Reject invalid DBC */
+				return FR_INVALID_NAME;
+			sfn[i++] = c;
+			sfn[i++] = d;
+		} else {						/* Single byte code */
+			if (chk_chr("\"*+,:;<=>\?[]|\x7F", c))	/* Reject illegal chrs for SFN 检查文件名*/
+				return FR_INVALID_NAME;
+			if (IsUpper(c)) {			/* ASCII large capital? */
+				b |= 2;
+			} else {
+				if (IsLower(c)) {		/* ASCII small capital? */
+					b |= 1; c -= 0x20;
+				}
+			}
+			sfn[i++] = c;
+		}
+	}
+	*path = &p[si];						/* Return pointer to the next segment 返回新的指针*/
+	c = (c <= ' ') ? NS_LAST : 0;		/* Set last segment flag if end of path */
+
+	if (!i) return FR_INVALID_NAME;		/* Reject nul string 无效*/
+	if (sfn[0] == DDE) sfn[0] = NDDE;	/* When first character collides with DDE, replace it with 0x05 */
+
+	if (ni == 8) b <<= 2;
+	if ((b & 0x03) == 0x01) c |= NS_EXT;	/* NT flag (Name extension has only small capital) */
+	if ((b & 0x0C) == 0x04) c |= NS_BODY;	/* NT flag (Name body has only small capital) */
+
+	sfn[NS] = c;		/* Store NT flag, File name is created */
+
+	return FR_OK;
+
 }
