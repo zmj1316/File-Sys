@@ -1504,18 +1504,15 @@ FRESULT f_open (
 	fp->fs = 0;			/* Clear file object */
 
 	/* Get logical drive number */
-#if !_FS_READONLY
+
 	mode &= FA_READ | FA_WRITE | FA_CREATE_ALWAYS | FA_OPEN_ALWAYS | FA_CREATE_NEW;
 	res = find_volume(&dj.fs, &path, (BYTE)(mode & ~FA_READ));
-#else
-	mode &= FA_READ;
-	res = find_volume(&dj.fs, &path, 0);
-#endif
+
 	if (res == FR_OK) {
 		INIT_BUF(dj);
 		res = follow_path(&dj, path);	/* Follow the file path */
 		dir = dj.dir;
-#if !_FS_READONLY	/* R/W configuration */
+	/* R/W configuration */
 		if (res == FR_OK) {
 			if (!dir)	/* Default directory itself */
 				res = FR_INVALID_NAME;
@@ -1575,18 +1572,7 @@ FRESULT f_open (
 			fp->dir_ptr = dir;/**/
 		}
 
-#else				/* R/O configuration */
-		if (res == FR_OK) {					/* Follow succeeded */
-			dir = dj.dir;
-			if (!dir) {						/* Current directory itself */
-				res = FR_INVALID_NAME;
-			} else {
-				if (dir[DIR_Attr] & AM_DIR)	/* It is a directory */
-					res = FR_NO_FILE;
-			}
-		}
-#endif
-		FREE_BUF();/*没用*/
+
 
 		if (res == FR_OK) {
 			fp->flag = mode;					/* File access mode 访问模式*/
