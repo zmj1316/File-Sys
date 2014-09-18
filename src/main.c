@@ -60,6 +60,11 @@ BYTE Buff[262144];          /* Ã§Â¼â€œÃ¥Â­Ëœ */
                                ^    5th call returns 255 and next ptr
                                   ^ 6th call fails and returns 0
 */
+
+
+
+
+
 DWORD getsize(char * fn){
     DWORD count=0;
     FILE *fp;
@@ -83,7 +88,7 @@ void xcopy(DIR * dp,char * ptr){/**/
     BYTE idx=0,ofsect=0;
     char * fn;
     int i=0,count =0;
-    char a[50]="data-";
+    char a[50]="data\\";
     if(dp->sclust)
         disk_read(0,buff,clust2sect(dp->fs,dp->sclust),1);
     else
@@ -350,8 +355,12 @@ void main (void)
     system("color f1");  
     system("diskmgmt.msc");
     printf("%s\n", Draw);
-    printf("»¶Ó­Ê¹ÓÃ !\n ÍË³ö:'q' \n °ïÖú:'?'\n");
+    printf("»¶Ó­Ê¹ÓÃ !\n ÍË³ö:'q' \n °ïÖú:'?'\nÇëÊ×ÏÈÓÃ'fi'¼ÓÔØ0ºÅÅÌ\n");
     f_opendir(&dir,"/");
+    char c[126]="mspaint .\\data\\";
+    char d[126]="mspaint .\\data\\";
+    char t[126]="notepad .\\data\\";
+    char tt[126]="notepad .\\data\\";
     while(1){
         ptr=cmd;
         printf(">");
@@ -402,7 +411,6 @@ void main (void)
                     if (!xatoi(&ptr, &p2)) p2 = 0;
                     sprintf(ptr, "%d:", p1);
                     res=f_mount(&FatFs[p1], ptr, (BYTE)p2);
-                    printf("%d\n",res );
                     f_opendir(&dir,"/");
                 break;
                 case 'l':
@@ -438,7 +446,7 @@ void main (void)
                 switch (*ptr++){
                 case 'l':
                     f_readdir(&dir,0);
-                    printf("ÎÄ¼þÃû      Ä¿Â¼ÉÈÇø    ´óÐ¡ \n"); 
+                    printf("ÎÄ¼þÃû      Ä¿Â¼ÉÈÇø    ´óÐ¡     ÈÕÆÚ\n"); 
                     while(1){
                         
                         f_readdir(&dir,&fno);
@@ -447,7 +455,7 @@ void main (void)
                                 printf("%s\\  ", fno.fname);
                             else
                                 printf("%s ", fno.fname);
-                            printf("        %d       %d \n",dir.sclust?dir.sclust-2+FatFs[0].database:FatFs[0].dirbase ,fno.fsize);
+                            printf("        %d       %d       %d %d %d\n",dir.sclust?dir.sclust-2+FatFs[0].database:FatFs[0].dirbase ,fno.fsize,(fno.fdate>>9)+1980,fno.fdate>>5&15,fno.fdate&31);
                         }
                         else
                             break;
@@ -465,8 +473,8 @@ void main (void)
             case 'c':
                 switch (*ptr++){
                     case 'd': 
-                        printf("%d\n",f_opendir(&dir,ptr));
-                        printf("%x\n%x\n%s\n",dir.sclust,dir.clust, dir.fn);
+                        if(res=f_opendir(&dir,ptr)) {put_rc(res);break;}
+                        printf("ËùÔÚ´Ø:0x%x\n",dir.sclust);
                         printf("ÎÄ¼þÃû      Ä¿Â¼ÉÈÇø    ´óÐ¡ \n"); 
                         while(1){
                             f_readdir(&dir,&fno);
@@ -487,6 +495,8 @@ void main (void)
                 switch(*ptr++){
                     case 'i': xput(&dir,ptr); break;
                     case 'o': xcopy(&dir,ptr);break;
+                    case 'p': xcopy(&dir,ptr); strcpy(c,d);strcat(c,ptr); system(c); break;
+                    case 't': xcopy(&dir,ptr); strcpy(t,tt);strcat(t,ptr); system(t); break;
                 }
             break;
             case 'p':   xprint(&dir,ptr); break;
@@ -494,6 +504,7 @@ void main (void)
         }
     }
     /*  */
+    
     printf("%d\n",f_mount(&fs[0],"",1));
     printf("%d\n",f_mkfs("",0,0) );
     getch();

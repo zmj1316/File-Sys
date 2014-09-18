@@ -83,19 +83,8 @@ typedef struct {
 	BYTE	fsi_flag;		/* FSINFO flags (b7:disabled, b0:dirty) */
 	WORD	id;				/* File system mount ID 读写挂载*/
 	WORD	n_rootdir;		/* Number of root directory entries (FAT12/16) 根目录文件数*/
-#if _MAX_SS != _MIN_SS
-	WORD	ssize;			/* Bytes per sector (512, 1024, 2048 or 4096) */
-#endif
-#if _FS_REENTRANT
-	_SYNC_t	sobj;			/* Identifier of sync object */
-#endif
-#if !_FS_READONLY
 	DWORD	last_clust;		/* Last allocated cluster 最后分配簇*/
 	DWORD	free_clust;		/* Number of free clusters 空闲簇*/
-#endif
-#if _FS_RPATH
-	DWORD	cdir;			/* Current directory start cluster (0:root) 当前目录（默认关闭）*/
-#endif
 	DWORD	n_fatent;		/* Number of FAT entries, = number of clusters + 2 fat记录类型数（簇数+空闲+损坏）*/
 	DWORD	fsize;			/* Sectors per FAT 记录的大小*/
 	DWORD	volbase;		/* Volume start sector */
@@ -156,10 +145,6 @@ typedef struct {
 	WORD	ftime;			/* Last modified time 时间*/
 	BYTE	fattrib;		/* Attribute 属性*/
 	TCHAR	fname[13];		/* Short file name (8.3 format) 文件名*/
-#if _USE_LFN
-	TCHAR*	lfname;			/* Pointer to the LFN buffer */
-	UINT 	lfsize;			/* Size of LFN buffer in TCHAR */
-#endif
 } FILINFO;
 
 

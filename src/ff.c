@@ -276,11 +276,9 @@ static
 WORD Fsid;					/* File system mount ID 挂载id*/
 
 
-#if _USE_LFN == 0			/* No LFN feature */
 #define	DEF_NAMEBUF			BYTE sfn[12]
 #define INIT_BUF(dobj)		(dobj).fn = sfn
 #define	FREE_BUF()
-#endif
 
 
 #ifdef _EXCVT
@@ -344,7 +342,6 @@ int chk_chr (const char* str, int chr) {
 /* Move/Flush disk access window in the file system object               */
 /*-----------------------------------------------------------------------*/
 /*确认缓存写入完成（同步读写窗口）*/
-#if !_FS_READONLY
 static
 FRESULT sync_window (
 	FATFS* fs		/* File system object */
@@ -368,7 +365,6 @@ FRESULT sync_window (
 	}
 	return FR_OK;
 }
-#endif
 
 /*缓存扇区 至内存*/
 static
@@ -396,7 +392,6 @@ FRESULT move_window (
 /*-----------------------------------------------------------------------*/
 /* Synchronize file system and strage device  同步文件信息                           */
 /*-----------------------------------------------------------------------*/
-#if !_FS_READONLY
 static
 FRESULT sync_fs (	/* FR_OK: successful, FR_DISK_ERR: failed */
 	FATFS* fs		/* File system object */
@@ -406,7 +401,6 @@ FRESULT sync_fs (	/* FR_OK: successful, FR_DISK_ERR: failed */
 	res = sync_window(fs);
 	return res;
 }
-#endif
 
 
 
@@ -467,9 +461,9 @@ DWORD get_fat (
 
 
 FRESULT put_fat (
-	FATFS* fs,	/* File system object */
-	DWORD clst,	/* Cluster# to be changed in range of 2 to fs->n_fatent - 1 */
-	DWORD val	/* New value to mark the cluster */
+	FATFS* fs,	
+	DWORD clst,	
+	DWORD val
 )
 {
 	UINT bc;
@@ -518,7 +512,7 @@ FRESULT remove_chain (
 	} else {
 		res = FR_OK;
 		while (clst < fs->n_fatent) {			/* 判断是否超出范围*/
-			nxt = get_fat(fs, clst);			/* Get cluster status */
+			nxt = get_fat(fs, clst);			
 			res = put_fat(fs, clst, 0);			/* 标记当前簇为空 */
 			if (res != FR_OK) break;
 			if (fs->free_clust != 0xFFFFFFFF) {	/* 更新文件系统 增加空扇区计数*/
@@ -555,7 +549,7 @@ DWORD create_chain (	/* 0:No free cluster, 1:Internal error, 0xFFFFFFFF:Disk err
 		if (!scl || scl >= fs->n_fatent) scl = 1;/*所有簇都已经分配过*/
 	}
 	else {					/* 连接 */
-		cs = get_fat(fs, clst);			/* Check the cluster status *检查开始簇是否空/
+		cs = get_fat(fs, clst);			/*  *检查开始簇是否空*/
 		if (cs < 2) return 1;			/* Invalid value */
 		if (cs == 0xFFFFFFFF) return cs;	/* A disk error occurred */
 		if (cs < fs->n_fatent) return cs;	/* It is already followed by next cluster 已经占用返回下一个*/
@@ -568,12 +562,10 @@ DWORD create_chain (	/* 0:No free cluster, 1:Internal error, 0xFFFFFFFF:Disk err
 		ncl++;							/* Next cluster */
 		if (ncl >= fs->n_fatent) {		/* 回到开头 */
 			ncl = 2;
-			if (ncl > scl) return 0;	/* No free cluster */
+			if (ncl > scl) return 0;	
 		}
-		cs = get_fat(fs, ncl);			/* Get the cluster status */
-		if (cs == 0) break;				/* Found a free cluster 找到空簇*/
-		if (cs == 0xFFFFFFFF || cs == 1)/* An error occurred */
-			return cs;
+		cs = get_fat(fs, ncl);			
+		if (cs == 0) break;				/*  找到空簇*/
 		if (ncl == scl) return 0;		/* No free cluster */
 	}
 
@@ -854,7 +846,7 @@ FRESULT dir_read (
 /*-----------------------------------------------------------------------*/
 /* Register an object to the directory      向目录注册一个文件                             */
 /*-----------------------------------------------------------------------*/
-#if !_FS_READONLY
+
 static
 FRESULT dir_register (	/* FR_OK:Successful, FR_DENIED:No free entry or too many SFN collision, FR_DISK_ERR:Disk error */
 	DIR* dp				/* Target directory with object name to be created */
@@ -876,7 +868,7 @@ FRESULT dir_register (	/* FR_OK:Successful, FR_DENIED:No free entry or too many 
 
 	return res;
 }
-#endif /* !_FS_READONLY */
+
 
 
 
@@ -2780,6 +2772,7 @@ void xput(DIR* dp,char * ptr){
     ST_DWORD(32*idx+buff+28,size);
     ST_WORD(32*idx+buff+26,fsect);
     printf("%lx\n",buff+28 );
+    fclose(tar);
     if(dp->sclust)
 	    disk_write(0,buff,clust2sect(dp->fs,dp->sclust),1);
 	else 
