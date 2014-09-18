@@ -193,10 +193,8 @@ FRESULT move_window (
 )
 {
 	if (sector != fs->winsect) {	/* Changed current window 改变当前读写窗口*/
-#if !_FS_READONLY
 		if (sync_window(fs) != FR_OK)
 			return FR_DISK_ERR;
-#endif
 		if (disk_read(fs->drv, fs->win, sector, 1))
 			return FR_DISK_ERR;
 		fs->winsect = sector;
