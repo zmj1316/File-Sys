@@ -1948,6 +1948,92 @@ FRESULT f_opendir (
 	LEAVE_FF(fs, res);
 }
 
+FRESULT f_lseek (
+	FIL* fp,		/* Pointer to the file object */
+	DWORD ofs		/* File pointer from top of file */
+)
+{
+	FRESULT res;
+
+
+	res = validate(fp);					/* Check validity of the object */
+	if (res != FR_OK) LEAVE_FF(fp->fs, res);
+	if (fp->err)						/* Check error */
+		LEAVE_FF(fp->fs, (FRESULT)fp->err);
+	/* Normal Seek */
+	{
+		DWORD clst, bcs, nsect, ifptr;
+
+		if (ofs > fp->fsize					/* In read-only mode, clip offset with the file size */
+			 && !(fp->flag & FA_WRITE)
+
+			) ofs = fp->fsize;
+
+		ifptr = fp->fptr;
+		fp->fptr = nsect = 0;
+		if (ofs) {
+			bcs = (DWORD)fp->fs->csize * SS(fp->fs);	/* Cluster size (byte) */
+			if (ifptr > 0 &&
+				(ofs - 1) / bcs >= (ifptr - 1) / bcs) {	/* When seek to same or following cluster, */
+				fp->fptr = (ifptr - 1) & ~(bcs - 1);	/* start from the current cluster */
+				ofs -= fp->fptr;
+				clst = fp->clust;
+			} else {									/* When seek to back cluster, */
+				clst = fp->sclust;						/* start from the first cluster */
+				if (clst == 0) {						/* If no cluster chain, create a new chain */
+					clst = create_chain(fp->fs, 0);
+					if (clst == 1) ABORT(fp->fs, FR_INT_ERR);
+					if (clst == 0xFFFFFFFF) ABORT(fp->fs, FR_DISK_ERR);
+					fp->sclust = clst;
+				}
+				fp->clust = clst;
+			}
+			if (clst != 0) {
+				while (ofs > bcs) {						/* Cluster following loop */
+					if (fp->flag & FA_WRITE) {			/* Check if in write mode or not */
+						clst = create_chain(fp->fs, clst);	/* Force stretch if in write mode */
+						if (clst == 0) {				/* When disk gets full, clip file size */
+							ofs = bcs; break;
+						}
+					} else
+						clst = get_fat(fp->fs, clst);	/* Follow cluster chain if not in write mode */
+					if (clst == 0xFFFFFFFF) ABORT(fp->fs, FR_DISK_ERR);
+					if (clst <= 1 || clst >= fp->fs->n_fatent) ABORT(fp->fs, FR_INT_ERR);
+					fp->clust = clst;
+					fp->fptr += bcs;
+					ofs -= bcs;
+				}
+				fp->fptr += ofs;
+				if (ofs % SS(fp->fs)) {
+					nsect = clust2sect(fp->fs, clst);	/* Current sector */
+					if (!nsect) ABORT(fp->fs, FR_INT_ERR);
+					nsect += ofs / SS(fp->fs);
+				}
+			}
+		}
+		if (fp->fptr % SS(fp->fs) && nsect != fp->dsect) {	/* Fill sector cache if needed */
+
+			if (fp->flag & FA__DIRTY) {			/* Write-back dirty sector cache */
+				if (disk_write(fp->fs->drv, fp->buf, fp->dsect, 1))
+					ABORT(fp->fs, FR_DISK_ERR);
+				fp->flag &= ~FA__DIRTY;
+			}
+
+			if (disk_read(fp->fs->drv, fp->buf, nsect, 1))	/* Fill sector cache */
+				ABORT(fp->fs, FR_DISK_ERR);
+
+			fp->dsect = nsect;
+		}
+
+		if (fp->fptr > fp->fsize) {			/* Set file change flag if the file size is extended */
+			fp->fsize = fp->fptr;
+			fp->flag |= FA__WRITTEN;
+		}
+	}
+
+	LEAVE_FF(fp->fs, res);
+}
+
 
 
 

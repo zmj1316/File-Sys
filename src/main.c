@@ -303,12 +303,14 @@ void main (void)
                 case 'r':
                     f_unlink(ptr);
                     break;
+                case 'm':
+                    f_mkdir(ptr);
+                    break;
                 break;
                 }
             case 'l':
                 switch (*ptr++){
                 case 'l':
-                    f_opendir(&dir,"/");
                     while(1){
                         f_readdir(&dir,&fno);
                         if (dir.sect){
@@ -330,7 +332,27 @@ void main (void)
                 /*xput(&FatFs[0],"ff.c");*/
                 mkdir(&FatFs[0],"ff");
                 break;
+            case 'c':
+                switch (*ptr++){
+                    case 'd': 
+                        printf("%d\n",f_opendir(&dir,ptr));
+                        printf("%x\n%x\n%s\n",dir.sclust,dir.clust, dir.fn);
+                        while(1){
+                        f_readdir(&dir,&fno);
+                        if (dir.sect){
+                            if (fno.fattrib==16)
 
+                                printf("%s\\ ", fno.fname);
+                            else
+                                printf("%s ", fno.fname);
+                            printf("       sector:%d size:%d \n",dir.sect ,fno.fsize);
+                        }
+                        else
+                            break;
+                    }
+                        break;
+                }
+                break;
         }
     }
     /* 为逻辑驱动器注册工作区 */
