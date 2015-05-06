@@ -5,11 +5,11 @@
 \usepackage{listings}
 \begin{document}
 \begin{CJK}{GBK}{hei} % gbsn: 宋体简化字；gkai 楷体简化字;  bsmi 繁体宋书；bkai 繁体楷书
-\lstset{numbers=left, numberstyle=\tiny, keywordstyle=\color{blue!70}, commentstyle=\color{red!50!green!50!blue!50}, frame=shadowbox,backgroundcolor=\color[RGB]{245,245,244},  xleftmargin=2em,xrightmargin=2em, aboveskip=1em, escapeinside='',extendedchars=false ,keywordstyle=\bf\color{blue},
+\lstset{numbers=left, numberstyle=\tiny, keywordstyle=\color{blue!70}, commentstyle=\color{red!50!green!50!blue!50}, xleftmargin=2em,xrightmargin=2em, aboveskip=1em, escapeinside='',extendedchars=false ,keywordstyle=\bf\color{blue},
    identifierstyle=\bf,
    numberstyle=\color[RGB]{0,192,192},
   commentstyle=\it\color[RGB]{0,96,96},
- stringstyle=\rmfamily\slshape\color[RGB]{245,100,0},}
+ stringstyle=\rmfamily\slshape\color[RGB]{255,100,0},}
 %\renewcommand{\abstractname}{摘 \qquad 要}
 \renewcommand{\contentsname}{\center 目\qquad\qquad 录}
 \renewcommand{\listfigurename}{图 \quad 示 \quad 目 \quad 录}
@@ -81,18 +81,7 @@
   \item[xp $<$Filename$>$] 用画图打开
   \item[xt $<$Filename$>$] 用记事本打开\footnote{此功能调用系统仅供试用}
 \end{description}
-  \begin{figure}
-  \centering
-  \includegraphics[width=\textwidth]{xi.jpg}
-  \caption{之前}
-  \label{}
-  \end{figure}
-  \begin{figure}
-  \centering
-  \includegraphics[width=\textwidth]{xi2.jpg}
-  \caption{xiff.h之后}
-  \label{}
-  \end{figure}
+
 \chapter{代码与算法}
 \paragraph{} 注意：本程序主要代码额外存放于fun.c中，只用于展示，并未参与编译。
 \section{程序结构简介}
@@ -234,20 +223,20 @@ typedef struct {
   TCHAR fname[13];    /* '文件名'*/
 } FILINFO;
 //'小头转换'
-#define LD_WORD(ptr)    
+#define LD_WORD(ptr)
   (WORD)(((WORD)*((BYTE*)(ptr)+1)<<8)|
   (WORD)*(BYTE*)(ptr))
-#define LD_DWORD(ptr)   
+#define LD_DWORD(ptr)
   (DWORD)(((DWORD)*((BYTE*)(ptr)+3)<<24)|
   ((DWORD)*((BYTE*)(ptr)+2)<<16)|
   ((WORD)*((BYTE*)(ptr)+1)<<8)|*(BYTE*)(ptr))
-#define ST_WORD(ptr,val)  
-  *(BYTE*)(ptr)=(BYTE)(val); 
+#define ST_WORD(ptr,val)
+  *(BYTE*)(ptr)=(BYTE)(val);
   *((BYTE*)(ptr)+1)=(BYTE)((WORD)(val)>>8)
-#define ST_DWORD(ptr,val) 
-  *(BYTE*)(ptr)=(BYTE)(val); 
-  *((BYTE*)(ptr)+1)=(BYTE)((WORD)(val)>>8); 
-  *((BYTE*)(ptr)+2)=(BYTE)((DWORD)(val)>>16); 
+#define ST_DWORD(ptr,val)
+  *(BYTE*)(ptr)=(BYTE)(val);
+  *((BYTE*)(ptr)+1)=(BYTE)((WORD)(val)>>8);
+  *((BYTE*)(ptr)+2)=(BYTE)((DWORD)(val)>>16);
   *((BYTE*)(ptr)+3)=(BYTE)((DWORD)(val)>>24)
 
 
@@ -607,12 +596,12 @@ int xatoi (
     char t[126]="notepad .\\data\\";
     char tt[126]="notepad .\\data\\";
     case 'p': xcopy(&dir,ptr); strcpy(c,d);
-    strcat(c,ptr); 
-    system(c); 
+    strcat(c,ptr);
+    system(c);
     break;
     case 't': xcopy(&dir,ptr); strcpy(t,tt);
-    strcat(t,ptr); 
-    system(t); 
+    strcat(t,ptr);
+    system(t);
     break;
     \*'最后突发奇想利用系统调用外部命令查看从磁盘里读取的文件
     并且在应用开始打开磁盘管理'*\
